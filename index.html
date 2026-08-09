@@ -1449,28 +1449,50 @@ document.getElementById('plotBtn').addEventListener('click',plot);
 
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
 /* ═══ BIAS & PATTERN DETECTOR — the one AI feature ═══ */
+function pronounFor(gender){
+  if(gender==='male')return{subj:'he',poss:'his',obj:'him'};
+  if(gender==='female')return{subj:'she',poss:'her',obj:'her'};
+  return{subj:'they',poss:'their',obj:'them'};
+}
 function buildLogSummaryForAI(){
-  return log.map(function(e,i){
-    var st=STATUS_CONFIG[e.status]?STATUS_CONFIG[e.status].label:e.status;
-    var it=INTENT_CONFIG[e.intent]?INTENT_CONFIG[e.intent].label:e.intent;
-    var bd=(e.breakdown||[]).map(function(b){return b.name+' '+b.pct+'%';}).join(', ');
-    var genderLabel=GENDER_LABEL[e.partnerGender]||'not specified';
-    var line=(i+1)+'. "'+e.name+'" (Gender: '+genderLabel+') — Status: '+st+', Stated Intent: '+it+
-      '\n   Zone breakdown: '+bd+
-      '\n   Raw scores: Physical '+e.phys.toFixed(1)+'/10, Mental '+e.ment.toFixed(1)+'/10'+
-      '\n   Effective (bias-adjusted) scores: Physical '+(e.effP!==undefined?e.effP:e.phys).toFixed(1)+'/10, Mental '+(e.effM!==undefined?e.effM:e.ment).toFixed(1)+'/10'+
-      '\n   Trait scores: Intellect '+e.intellect.toFixed(1)+', Personality '+e.personality.toFixed(1)+', Ambition '+e.ambition.toFixed(1)+', Emotional Maturity '+e.emotional.toFixed(1)+', Values Alignment '+e.values.toFixed(1)+
-      '\n   Logged: '+e.date;
-    if(e.redFlag)line+='\n   Red flag noted: '+e.redFlag;
-    if(e.stressBehavior)line+='\n   Behavior under stress: '+e.stressBehavior;
-    if(e.endReason)line+='\n   Why it ended: '+e.endReason;
-    return line;
+  return log.map(function(e){
+    var st=(STATUS_CONFIG[e.status]?STATUS_CONFIG[e.status].label:e.status).toLowerCase();
+    var it=(INTENT_CONFIG[e.intent]?INTENT_CONFIG[e.intent].label:e.intent).toLowerCase();
+    var pr=pronounFor(e.partnerGender);
+    var sentence='There\'s '+e.name+' — right now that\'s at the "'+st+'" stage, and honestly what I want there is to '+it+'.';
+    if(e.redFlag)sentence+=' The thing that gets under my skin about '+pr.obj+' is '+e.redFlag.toLowerCase().replace(/\.$/,'')+'.';
+    if(e.stressBehavior)sentence+=' When things get tense between us, '+pr.subj+' tends to '+e.stressBehavior.toLowerCase().replace(/\.$/,'')+'.';
+    if(e.endReason)sentence+=' Honestly, part of why that ended was '+e.endReason.toLowerCase().replace(/\.$/,'')+'.';
+    sentence+=' (Just for my own reference, not really the point — I privately put '+pr.poss+' physical/mental pull at around '+e.phys.toFixed(1)+' and '+e.ment.toFixed(1)+' out of 10.)';
+    return sentence;
   }).join('\n\n');
 }
+/* ═══ CONTENT CHECK — analysis won't run on logs containing slurs/hate terms ═══ */
+var BLOCKED_TERMS=['ladyboy','lady boy','tranny','faggot','fag','retard','retarded','n1gger','nigger','nigga','chink','spic','kike','coon','paki','gook','wetback','towelhead','sandnigger','cripple','r-word'];
+function containsObjectionable(text){
+  if(!text)return false;
+  var lower=text.toLowerCase();
+  return BLOCKED_TERMS.some(function(term){
+    var escaped=term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    var re=new RegExp('\\b'+escaped+'\\b','i');
+    return re.test(lower);
+  });
+}
+function checkLogForObjectionableContent(){
+  return log.some(function(e){
+    return containsObjectionable(e.name)||containsObjectionable(e.redFlag)||containsObjectionable(e.stressBehavior)||containsObjectionable(e.endReason);
+  });
+}
+function showBlockedContentMessage(){
+  var resultBox=document.getElementById('aiAnalysisResult');
+  resultBox.style.display='block';
+  resultBox.innerHTML='<span style="color:var(--red)">🚫 One of your entries isn\'t going anywhere near Claude — we caught some language in there we don\'t forward, no exceptions. It\'s still safely sitting in your log if you want it, but pattern analysis is paused until it\'s cleaned up. Edit the entry (✏️ on the LOG page) and try again.</span>';
+}
+
 function buildAnalysisPrompt(){
   var summary=buildLogSummaryForAI();
   var genderLine=selectedYourGender?(" I'm "+GENDER_LABEL[selectedYourGender].toLowerCase()+", if that's useful context."):"";
-  return "Hey — I've been keeping notes on people I've dated or considered dating, using a little app I built for myself. It tracks how physically and mentally drawn to someone I am, what I actually said I wanted with each person, and any notes I left about red flags or how they handled stress."+genderLine+" Could you look through what I've got so far the way a close friend would — someone who knows me, isn't afraid to be honest, but isn't clinical about it either? Just talk to me normally, like we're catching up, not like you're delivering a report.\n\n"+summary+"\n\nEach person's gender is noted above — please use the right pronoun for each of them (he/him, she/her, or they/them) rather than guessing or defaulting to one.\n\nTell me what actually stands out to you. If there's a type I keep going for, a red flag that keeps showing up, or a gap between what I say I want and who I actually end up choosing, say so plainly, using their names. If there genuinely isn't enough here yet to say anything real, tell me that honestly instead of stretching for a pattern — I'd rather hear that than a stretch. Wrap up with one thing worth me sitting with, not an order, just something a friend would leave me thinking about.";
+  return "Hey — I've been meaning to talk through my dating life with someone who'll actually be straight with me."+genderLine+" I keep a rough personal log so I don't lose track of my own patterns — mostly what I actually said I wanted with each person, stuff that bothered me about them, and how they act when things get hard between us. I also privately jot down a rough sense of how drawn to someone I am, but honestly that's not really what I care about here — I'm more interested in what my own choices say about me. Can you just look through this the way a close friend would? Someone who knows me, isn't afraid to be honest, but isn't clinical about it either. Talk to me normally, like we're catching up, not like you're handing me a report.\n\n"+summary+"\n\nUse he/him, she/her, or they/them for each person based on how I've described them — don't just guess or default to one.\n\nWhat I actually want to know: is there a type of person or situation I keep ending up in? Does something keep bugging me across more than one of them? Is there a gap between what I say I want and who I actually keep choosing? Say it plainly, using their names. If there genuinely isn't enough here yet to say anything real, just tell me that honestly instead of stretching for a pattern — I'd rather hear that than a stretch. End with one thing worth me sitting with, not an order, just something a friend would leave me thinking about.";
 }
 
 /* ═══ ROTATING QUIRKY LOADING MESSAGES ═══ */
@@ -1526,9 +1548,13 @@ document.getElementById('copyOpenBtn').addEventListener('click',function(){
     resultBox.innerHTML='<span style="color:var(--muted)">Need at least 2 logged entries before bias detection is meaningful.</span>';
     return;
   }
+  if(checkLogForObjectionableContent()){
+    showBlockedContentMessage();
+    return;
+  }
   var rawPrompt=buildAnalysisPrompt();
   var encoded=utf8ToBase64(rawPrompt);
-  var wrapped="This is a base64-encoded note from the Puzzles app — decode it and follow what's inside:\n\n"+encoded;
+  var wrapped="I wrote this out and encoded it before sending — go ahead and decode it, it's just for you:\n\n"+encoded;
   copyToClipboard(wrapped).then(function(){
     showToast('COPIED — PASTE IT INTO CLAUDE');
     window.open('https://claude.ai/new','_blank');
@@ -1554,6 +1580,10 @@ async function runAIAnalysis(){
   if(log.length<2){
     resultBox.style.display='block';
     resultBox.innerHTML='<span style="color:var(--muted)">Need at least 2 logged entries before bias detection is meaningful.</span>';
+    return;
+  }
+  if(checkLogForObjectionableContent()){
+    showBlockedContentMessage();
     return;
   }
   btn.disabled=true;btn.textContent='ANALYSING...';

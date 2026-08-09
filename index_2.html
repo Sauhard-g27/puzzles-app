@@ -1,0 +1,1774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Puzzles — Log someone, see the pattern</title>
+<meta name="description" content="Rate someone you're dating or interested in — not yourself. Puzzles tracks your dating history and shows you patterns you might not notice on your own.">
+<meta property="og:title" content="Puzzles — Log someone, see the pattern">
+<meta property="og:description" content="Rate someone you're dating or interested in — not yourself. Track your dating history and see the patterns.">
+<meta property="og:type" content="website">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ══════════ SINGLE DESIGN — dark (default) + light ══════════ */
+:root {
+  --bg:#141216; --dark:#1a171c; --surface:#211d23; --surface2:#28232a;
+  --surface3:#302a32; --border:#3a333c; --border2:#4a424c;
+  --acc:#e8734a; --acc2:#f0a06b; --acc-dim:rgba(232,115,74,0.13);
+  --acc-glow:rgba(232,115,74,0.28);
+  --text:#ede8e6; --text2:#a89fa8; --muted:#5c5560;
+  --red:#e0576a; --green:#4ecb96; --blue:#6a9fe8;
+  --f-mono:'JetBrains Mono',monospace;
+  --f-disp:'Fraunces',serif;
+  --f-body:'Inter',sans-serif;
+  --r:14px; --btn-radius:11px; --panel-radius:16px;
+}
+[data-mode="light"] {
+  --bg:#faf7f4; --dark:#f2ece6; --surface:#ffffff; --surface2:#f7f1ec;
+  --surface3:#efe6de; --border:#e6dbd0; --border2:#d4c4b6;
+  --acc:#c85a30; --acc2:#a8431e; --acc-dim:rgba(200,90,48,0.09);
+  --acc-glow:rgba(200,90,48,0.18);
+  --text:#241f1c; --text2:#6b5f56; --muted:#a89a8c;
+  --red:#c0392b; --green:#22935f; --blue:#3d68c0;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+
+body {
+  font-family: var(--f-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.3s, color 0.3s;
+  background-image:
+    radial-gradient(circle at 12% 6%, var(--acc-dim) 0%, transparent 32%),
+    radial-gradient(circle at 88% 94%, var(--acc-dim) 0%, transparent 32%);
+}
+/* ══════════ TOPBAR ══════════ */
+.topbar {
+  position:sticky; top:0; z-index:100;
+  background: var(--dark);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.3rem;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 58px; -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  transition: background 0.3s; flex-wrap: wrap; gap:6px;
+}
+.logo { display:flex; align-items:center; gap:9px; font-size:1.32rem; }
+.logo-wordmark { font-family: var(--f-disp); font-size: 1em; font-weight: 700; letter-spacing:-0.02em; color: var(--text); font-variation-settings:'opsz' 40; }
+.logo-wordmark span { color: var(--acc); font-style:normal; }
+.logo-mark-svg { flex-shrink:0; display:block; width:1.05em; height:1.05em; filter: drop-shadow(0 1px 4px rgba(0,0,0,0.3)); }
+
+.topbar-right { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.tab-btn {
+  font-family: var(--f-mono); font-size:0.63rem; letter-spacing:0.09em; text-transform:uppercase;
+  color:var(--text2); background:transparent; border:1px solid transparent; padding:7px 13px;
+  cursor:pointer; border-radius:var(--btn-radius); transition:all 0.15s; white-space:nowrap;
+}
+.tab-btn:hover { color:var(--acc); border-color:var(--border2); }
+.tab-btn.active { color:var(--acc); border-color:var(--acc); background:var(--acc-dim); }
+
+.icon-btn {
+  font-family:var(--f-mono); font-size:0.6rem; letter-spacing:0.04em;
+  text-transform:uppercase; color:var(--text2); background:var(--surface);
+  border:1px solid var(--border); padding:7px 11px; cursor:pointer;
+  border-radius:var(--btn-radius); transition:all 0.15s;
+  display:flex; align-items:center; gap:5px;
+}
+.icon-btn:hover { border-color:var(--acc); color:var(--acc); }
+
+/* ══════════ PAGES ══════════ */
+.page { display:none; padding:1.5rem; max-width:1080px; margin:0 auto; }
+.page.active { display:block; }
+
+.sec-head {
+  font-family:var(--f-mono); font-size:0.6rem; color:var(--acc);
+  letter-spacing:0.17em; text-transform:uppercase;
+  margin-bottom:1.15rem; display:flex; align-items:center; gap:10px;
+}
+.sec-head::before { content:'◆'; font-size:0.52rem; }
+.sec-head::after { content:''; flex:1; height:1px; background:var(--border); }
+.hint-text { font-family:var(--f-mono); font-size:0.65rem; color:var(--muted); letter-spacing:0.05em; padding:10px 0; text-align:center; }
+
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:1.15rem; }
+@media(max-width:700px){ .grid-2{ grid-template-columns:1fr; } }
+.span-2 { grid-column:1/-1; }
+
+.panel {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--panel-radius); padding:1.25rem;
+  transition:background 0.3s, border-color 0.3s; position:relative;
+  box-shadow:0 1px 3px rgba(0,0,0,0.12);
+}
+.panel::before {
+  content:''; position:absolute; top:-1px; left:1.45rem; width:15px; height:8px;
+  background:var(--acc); border-radius:0 0 8px 8px; opacity:0.8;
+}
+.field { margin-bottom:1rem; }
+.field:last-child { margin-bottom:0; }
+.field-label {
+  font-family:var(--f-mono); font-size:0.6rem; color:var(--text2);
+  letter-spacing:0.11em; text-transform:uppercase; margin-bottom:6px;
+  display:flex; justify-content:space-between; align-items:baseline;
+}
+.field-label .live { color:var(--acc); font-size:0.76rem; font-weight:600; }
+
+input[type=text], input[type=number], input[type=password], textarea {
+  width:100%; background:var(--dark); border:1px solid var(--border);
+  border-radius:var(--r); color:var(--acc2); font-family:var(--f-mono);
+  font-size:1.05rem; padding:0.58rem 0.85rem; outline:none;
+  -webkit-appearance:none; -moz-appearance:textfield;
+  transition:border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+input[type=text], input[type=password], textarea { font-size:1rem; color:var(--text); font-family:var(--f-body); }
+textarea { resize:vertical; min-height:64px; line-height:1.5; }
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; }
+input:focus, textarea:focus { background:var(--surface2); border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-dim); }
+input.invalid { border-color:var(--red)!important; color:var(--red)!important; box-shadow:0 0 0 3px rgba(224,87,106,0.12)!important; }
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--dark) inset !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+.weight-row { display:flex; align-items:center; gap:8px; margin-top:6px; }
+.wlabel { font-family:var(--f-mono); font-size:0.56rem; color:var(--muted); letter-spacing:0.09em; white-space:nowrap; width:78px; flex-shrink:0; }
+input[type=range] {
+  -webkit-appearance:none; appearance:none; flex:1; height:4px;
+  background:var(--border2); outline:none; cursor:pointer; border-radius:2px; padding:0;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; width:15px; height:15px; background:var(--acc);
+  border:2px solid var(--bg); cursor:pointer; border-radius:50%;
+}
+.wval { font-family:var(--f-mono); font-size:0.7rem; color:var(--acc); min-width:34px; text-align:right; }
+
+.computed {
+  display:flex; justify-content:space-between; align-items:center;
+  background:var(--surface2); border:1px solid var(--border);
+  padding:7px 12px; margin-top:6px; border-radius:var(--r);
+}
+.computed .clabel { font-family:var(--f-mono); font-size:0.56rem; color:var(--muted); letter-spacing:0.09em; }
+.computed .cval { font-family:var(--f-mono); font-size:1rem; color:var(--acc); font-weight:600; }
+
+.div { height:1px; background:var(--border); margin:1rem 0; }
+
+.status-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+.gender-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:7px; }
+.gender-btn {
+  background:var(--surface2); border:1px solid var(--border); color:var(--text2);
+  font-family:var(--f-mono); font-size:0.62rem; letter-spacing:0.05em;
+  padding:9px 8px; cursor:pointer; text-align:center;
+  transition:all 0.15s; border-radius:var(--btn-radius);
+  -webkit-tap-highlight-color:transparent;
+}
+.gender-btn:hover { border-color:var(--border2); color:var(--text); }
+.gender-btn.selected { border-color:var(--acc); background:var(--acc-dim); color:var(--acc); }
+.intent-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+.status-btn, .intent-btn {
+  background:var(--surface2); border:1px solid var(--border); color:var(--text2);
+  font-family:var(--f-mono); font-size:0.6rem; letter-spacing:0.04em;
+  padding:11px 8px; cursor:pointer; text-align:center;
+  transition:all 0.15s; border-radius:var(--btn-radius);
+  -webkit-tap-highlight-color:transparent;
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+}
+.status-btn .semoji, .intent-btn .iemoji { font-size:1.2rem; }
+.status-btn:hover, .intent-btn:hover { border-color:var(--border2); color:var(--text); }
+.status-btn.selected, .intent-btn.selected { border-color:var(--acc); background:var(--acc-dim); color:var(--acc); }
+.intent-btn.hidden-opt { display:none !important; }
+
+.plot-btn {
+  width:100%; border:none; color:#fff;
+  background: linear-gradient(135deg, var(--acc), var(--acc2));
+  font-family:var(--f-body); font-size:0.85rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase;
+  padding:0.95rem; cursor:pointer;
+  transition:all 0.15s; -webkit-tap-highlight-color:transparent;
+  margin-top:0.5rem; border-radius:var(--btn-radius);
+  box-shadow:0 6px 20px -6px var(--acc-glow);
+}
+[data-mode="light"] .plot-btn { color:#fff; }
+.plot-btn:hover { filter:brightness(1.06); transform:translateY(-1px); box-shadow:0 10px 26px -6px var(--acc-glow); }
+.plot-btn:active { opacity:0.9; transform:none; }
+.err { font-family:var(--f-mono); font-size:0.63rem; color:var(--red); letter-spacing:0.05em; margin-top:6px; min-height:1rem; }
+.result-box {
+  display:none; background:var(--surface); border:1px solid var(--border);
+  padding:1.25rem; margin-top:1.15rem; border-radius:var(--panel-radius);
+  animation:fadeUp 0.3s ease; position:relative; box-shadow:0 1px 3px rgba(0,0,0,0.12);
+}
+.result-box::before { content:''; position:absolute; top:-1px; left:1.45rem; width:15px; height:8px; background:var(--acc); border-radius:0 0 8px 8px; opacity:0.8; }
+.result-box.show { display:block; }
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+.result-name { font-family:var(--f-disp); font-size:clamp(1.6rem,4vw,2.3rem); font-weight:600; font-style:italic; line-height:1.1; }
+.result-sub { font-size:0.82rem; color:var(--text2); line-height:1.65; margin-top:8px; font-weight:400; }
+
+.zone-breakdown { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+.zone-bar-row { display:flex; align-items:center; gap:10px; }
+.zone-bar-label { font-family:var(--f-disp); font-size:0.88rem; font-weight:600; width:130px; flex-shrink:0; }
+.zone-bar-track { flex:1; height:10px; background:var(--surface2); border-radius:6px; overflow:hidden; position:relative; }
+.zone-bar-fill { height:100%; border-radius:6px; transition:width 0.4s ease; }
+.zone-bar-pct { font-family:var(--f-mono); font-size:0.72rem; color:var(--text2); width:42px; text-align:right; flex-shrink:0; }
+
+.intent-result { margin-top:12px; padding:12px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--r); font-family:var(--f-mono); font-size:0.7rem; color:var(--text2); line-height:1.55; }
+.intent-result strong { color:var(--acc); }
+
+.bias-notice { border-radius:var(--r); margin-top:10px; padding:10px 12px; border:1px dashed var(--acc); font-family:var(--f-mono); font-size:0.65rem; color:var(--text2); line-height:1.6; }
+
+.coord-strip { display:flex; flex-wrap:wrap; gap:13px; margin-top:12px; padding-top:12px; border-top:1px dashed var(--border); }
+.coord-l { font-family:var(--f-mono); font-size:0.51rem; color:var(--muted); letter-spacing:0.11em; text-transform:uppercase; display:block; margin-bottom:1px; }
+.coord-v { font-family:var(--f-mono); font-size:0.92rem; color:var(--acc); }
+
+.graph-box { display:none; background:var(--surface); border:1px solid var(--border); padding:1.25rem; margin-top:1.15rem; border-radius:var(--panel-radius); position:relative; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
+.graph-box::before { content:''; position:absolute; top:-1px; left:1.45rem; width:15px; height:8px; background:var(--acc); border-radius:0 0 8px 8px; opacity:0.8; }
+.graph-box.show { display:block; }
+svg { width:100%; height:auto; display:block; }
+
+.log-toolbar { display:flex; flex-wrap:wrap; gap:7px; align-items:center; margin-bottom:1.15rem; padding-bottom:1.15rem; border-bottom:1px dashed var(--border); }
+.log-toolbar-label { font-family:var(--f-mono); font-size:0.56rem; color:var(--muted); letter-spacing:0.09em; margin-right:4px; }
+.sort-btn, .filter-btn {
+  font-family:var(--f-mono); font-size:0.6rem; letter-spacing:0.05em; text-transform:uppercase;
+  background:var(--surface2); border:1px solid var(--border); color:var(--text2);
+  padding:6px 11px; cursor:pointer; border-radius:var(--btn-radius);
+  transition:all 0.15s; -webkit-tap-highlight-color:transparent;
+}
+.sort-btn:hover, .filter-btn:hover { border-color:var(--acc); color:var(--acc); }
+.sort-btn.active, .filter-btn.active { border-color:var(--acc); color:var(--acc); background:var(--acc-dim); }
+
+.log-empty { text-align:center; padding:3.5rem 1rem; font-family:var(--f-mono); font-size:0.72rem; color:var(--muted); letter-spacing:0.08em; }
+.log-grid { display:flex; flex-direction:column; gap:9px; }
+.log-card { background:var(--surface); border:1px solid var(--border); padding:1.1rem 1.2rem; border-radius:var(--panel-radius); animation:fadeUp 0.2s ease; transition:all 0.15s; position:relative; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+.log-card::before { content:''; position:absolute; top:-1px; left:1.3rem; width:13px; height:7px; background:var(--acc); border-radius:0 0 7px 7px; opacity:0.75; }
+.log-card:hover { background:var(--surface2); transform:translateX(2px); }
+.log-card-top { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+.log-card-name { font-family:var(--f-disp); font-size:1.12rem; font-weight:600; font-style:italic; }
+.log-card-zone { font-family:var(--f-mono); font-size:0.63rem; letter-spacing:0.06em; text-transform:uppercase; margin-top:3px; }
+.log-card-date { font-family:var(--f-mono); font-size:0.56rem; color:var(--muted); letter-spacing:0.07em; white-space:nowrap; }
+.log-card-badges { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
+.badge { font-family:var(--f-mono); font-size:0.56rem; letter-spacing:0.04em; padding:3px 9px; border-radius:20px; border:1px solid; display:inline-flex; align-items:center; gap:4px; }
+.log-card-scores { display:flex; flex-wrap:wrap; gap:13px; margin-top:9px; padding-top:9px; border-top:1px dashed var(--border); }
+.log-score-l { font-family:var(--f-mono); font-size:0.51rem; color:var(--muted); letter-spacing:0.09em; text-transform:uppercase; display:block; }
+.log-score-v { font-family:var(--f-mono); font-size:0.87rem; }
+.log-card-actions { display:flex; gap:6px; margin-top:9px; flex-wrap:wrap; }
+.log-action-btn { font-family:var(--f-mono); font-size:0.58rem; letter-spacing:0.07em; text-transform:uppercase; background:transparent; border:1px solid var(--border); color:var(--text2); padding:5px 11px; cursor:pointer; border-radius:var(--btn-radius); transition:all 0.15s; -webkit-tap-highlight-color:transparent; }
+.log-action-btn:hover { border-color:var(--acc); color:var(--acc); }
+.log-action-btn.danger:hover { border-color:var(--red); color:var(--red); }
+
+.legend-wrap { display:flex; flex-wrap:wrap; gap:7px; margin-top:0.9rem; }
+.leg-item { display:flex; align-items:center; gap:5px; font-family:var(--f-mono); font-size:0.6rem; color:var(--text2); }
+.leg-bar { width:16px; height:2px; }
+.modal-overlay { display:none; position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.7); -webkit-backdrop-filter:blur(5px); backdrop-filter:blur(5px); align-items:center; justify-content:center; padding:1rem; }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--surface); border:1px solid var(--border); padding:1.5rem; width:100%; max-width:500px; max-height:90vh; overflow-y:auto; border-radius:var(--panel-radius); animation:fadeUp 0.2s ease; }
+.modal-title { font-family:var(--f-disp); font-size:1.25rem; font-weight:600; font-style:italic; margin-bottom:1.1rem; }
+.modal-close { float:right; background:transparent; border:none; color:var(--text2); font-size:1.3rem; cursor:pointer; line-height:1; margin-top:-2px; }
+
+.toast { position:fixed; bottom:1.6rem; left:50%; transform:translateX(-50%) translateY(20px); background:var(--surface); border:1px solid var(--acc); color:var(--acc); font-family:var(--f-mono); font-size:0.7rem; letter-spacing:0.07em; padding:11px 19px; border-radius:var(--btn-radius); opacity:0; transition:opacity 0.2s, transform 0.2s; z-index:300; white-space:nowrap; box-shadow:0 8px 30px -6px rgba(0,0,0,0.5); }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+.dropdown-panel { display:none; position:fixed; top:64px; right:1rem; z-index:150; background:var(--surface); border:1px solid var(--border); padding:0.8rem; min-width:200px; border-radius:var(--panel-radius); animation:fadeUp 0.15s ease; box-shadow:0 12px 40px -8px rgba(0,0,0,0.45); }
+.dropdown-panel.open { display:block; }
+.dd-opt { display:flex; align-items:center; gap:9px; font-family:var(--f-mono); font-size:0.62rem; letter-spacing:0.07em; text-transform:uppercase; color:var(--text2); padding:8px 7px; cursor:pointer; border-radius:var(--btn-radius); transition:all 0.1s; -webkit-tap-highlight-color:transparent; }
+.dd-opt:hover { background:var(--surface2); color:var(--text); }
+.dd-opt.active { color:var(--acc); }
+.dd-sep { height:1px; background:var(--border); margin:8px 0; }
+.dd-add-row { display:flex; gap:6px; margin-top:6px; }
+.dd-add-row input { font-size:0.75rem; padding:6px 8px; }
+.dd-add-row button { font-family:var(--f-mono); font-size:0.6rem; padding:6px 10px; background:var(--acc); color:#fff; border:none; border-radius:var(--btn-radius); cursor:pointer; white-space:nowrap; }
+
+.ai-panel { background:var(--surface); border:1px solid var(--acc); padding:1.25rem; margin-bottom:1.15rem; border-radius:var(--panel-radius); position:relative; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
+.ai-btn { width:100%; border:none; color:#fff; background: linear-gradient(135deg, var(--acc), var(--acc2)); font-family:var(--f-body); font-size:0.82rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; padding:0.9rem; cursor:pointer; border-radius:var(--btn-radius); transition:all 0.15s; box-shadow:0 6px 20px -6px var(--acc-glow); }
+.ai-btn:hover { filter:brightness(1.06); }
+.ai-btn:disabled { opacity:0.6; cursor:wait; }
+.ai-result { margin-top:1rem; padding:1rem; background:var(--surface2); border:1px solid var(--border); border-radius:var(--r); font-size:0.85rem; line-height:1.75; color:var(--text); display:none; }
+.ai-note { font-family:var(--f-mono); font-size:0.6rem; color:var(--muted); letter-spacing:0.04em; margin-top:9px; line-height:1.5; }
+
+/* ══════════ GUIDED TOUR ══════════ */
+.tour-dim { display:none; position:fixed; inset:0; z-index:400; background:rgba(0,0,0,0.65); }
+.tour-dim.active { display:block; }
+.tour-highlight {
+  position:relative; z-index:401;
+  outline:3px solid var(--acc); outline-offset:3px; border-radius:var(--panel-radius);
+  box-shadow:0 0 0 6px var(--acc-dim), 0 0 30px var(--acc-glow);
+  animation:tourPulse 1.6s ease-in-out infinite;
+  scroll-margin:100px;
+}
+@keyframes tourPulse{0%,100%{outline-color:var(--acc);}50%{outline-color:var(--acc2);}}
+.tour-tooltip {
+  display:none; position:fixed; z-index:402; max-width:280px;
+  background:var(--surface); border:2px solid var(--acc); border-radius:var(--r);
+  padding:0.9rem 1rem; box-shadow:0 12px 40px -8px rgba(0,0,0,0.6);
+}
+.tour-tooltip.active { display:block; }
+.tour-tooltip-text { font-size:0.85rem; line-height:1.55; color:var(--text); margin-bottom:0.8rem; }
+.tour-tooltip-footer { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.tour-step-count { font-family:var(--f-mono); font-size:0.6rem; color:var(--muted); letter-spacing:0.08em; }
+.tour-btns { display:flex; gap:6px; }
+.tour-btn { font-family:var(--f-mono); font-size:0.62rem; letter-spacing:0.06em; text-transform:uppercase; padding:6px 12px; border-radius:var(--btn-radius); cursor:pointer; border:none; }
+.tour-btn-skip { background:transparent; color:var(--text2); border:1px solid var(--border); }
+.tour-btn-next { background:var(--acc); color:#fff; font-weight:600; }
+.tour-arrow { position:absolute; width:14px; height:14px; background:var(--surface); border:2px solid var(--acc); transform:rotate(45deg); }
+.tour-arrow.top { bottom:-9px; border-top:none; border-left:none; }
+.tour-arrow.bottom { top:-9px; border-bottom:none; border-right:none; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">
+    <svg class="logo-mark-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="puzzleGrad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#e8734a"/>
+          <stop offset="1" stop-color="#8f5fd8"/>
+        </linearGradient>
+      </defs>
+      <path d="M30 38 L50 26 L70 38 L70 62 L50 74 L30 62 Z" fill="none" stroke="url(#puzzleGrad)" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M50 26 L50 74 M30 38 L70 62 M70 38 L30 62" stroke="url(#puzzleGrad)" stroke-width="1.6" opacity="0.55"/>
+    </svg>
+    <div class="logo-wordmark">Puzzles<span>.</span></div>
+  </div>
+  <div class="topbar-right">
+    <button class="tab-btn active" data-page="plot">PLOT</button>
+    <button class="tab-btn" data-page="log">LOG</button>
+    <button class="tab-btn" data-page="map">MAP</button>
+    <button class="tab-btn" data-page="about">ABOUT</button>
+    <button class="tab-btn" data-page="more">MORE</button>
+    <button class="icon-btn" id="howItWorksBtn">❓ HOW IT WORKS</button>
+    <button class="icon-btn" id="profileToggle">👤 <span id="profileNameDisplay">Player</span></button>
+    <button class="icon-btn" id="modeToggle">🌙 MODE</button>
+  </div>
+</div>
+
+<div class="dropdown-panel" id="profilePanel">
+  <div id="profileList"></div>
+  <div class="dd-sep"></div>
+  <div class="dd-add-row">
+    <input type="text" id="newProfileInput" placeholder="New profile name">
+    <button id="addProfileBtn">ADD</button>
+  </div>
+</div>
+
+<div class="page active" id="page-plot">
+
+  <div class="panel" style="margin-bottom:1.1rem;border-color:var(--acc);background:var(--acc-dim);">
+    <div style="font-size:0.86rem;line-height:1.65;color:var(--text);"><strong style="color:var(--acc);">What this is:</strong> log someone you're dating, talking to, or interested in — <strong>not yourself</strong>. Rate them, add notes, and once you've logged a couple of people, get an honest read on your own patterns. Not a game — a personal tracker.</div>
+  </div>
+
+  <div style="margin-bottom:0.9rem;">
+    <div class="sec-head">Subject</div>
+    <div class="field">
+      <div class="field-label">THEIR NAME <span style="color:var(--muted);font-weight:400;text-transform:none;">(the person you're rating, not you)</span></div>
+      <input type="text" id="codename" placeholder="e.g. Sam, Red Dress, College Friend...">
+    </div>
+    <div class="field">
+      <div class="field-label">YOUR GENDER <span style="color:var(--muted);font-weight:400;text-transform:none;">(saved for this profile — helps the analysis use the right pronouns)</span></div>
+      <div class="gender-grid">
+        <button class="gender-btn" data-your-gender="male">MALE</button>
+        <button class="gender-btn" data-your-gender="female">FEMALE</button>
+        <button class="gender-btn" data-your-gender="other">OTHER</button>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">THEIR GENDER</div>
+      <div class="gender-grid">
+        <button class="gender-btn" data-partner-gender="male">MALE</button>
+        <button class="gender-btn" data-partner-gender="female">FEMALE</button>
+        <button class="gender-btn" data-partner-gender="other">OTHER</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel span-2" style="margin-bottom:1.1rem;">
+    <div class="sec-head">Qualitative Context <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;">(fuel for the bias detector below)</span></div>
+    <div class="field">
+      <div class="field-label">THEIR BIGGEST RED FLAG OR RECURRING CONFLICT</div>
+      <textarea id="redFlag" placeholder="e.g. Cancels plans last-minute, gets defensive when questioned..."></textarea>
+    </div>
+    <div class="field">
+      <div class="field-label">THEIR BEHAVIOR WHEN STRESSED OR CHALLENGED</div>
+      <textarea id="stressBehavior" placeholder="e.g. Shuts down and goes quiet, or gets combative..."></textarea>
+    </div>
+    <div class="field" id="endReasonField" style="display:none;">
+      <div class="field-label">WHY DID THINGS END? <span style="color:var(--muted);text-transform:none;">(shown when status = EX)</span></div>
+      <textarea id="endReason" placeholder="e.g. They wanted commitment I wasn't ready for..."></textarea>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel" id="tourPhysicalPanel">
+      <div class="sec-head">Physical Score</div>
+      <div class="field">
+        <div class="field-label">FACE <span class="live" id="faceDisplay">—</span></div>
+        <input type="number" id="face" min="0" max="10" step="0.5" placeholder="0 – 10">
+      </div>
+      <div class="field">
+        <div class="field-label">BODY <span class="live" id="bodyDisplay">—</span></div>
+        <input type="number" id="body" min="0" max="10" step="0.5" placeholder="0 – 10">
+      </div>
+      <div class="weight-row">
+        <span class="wlabel">FACE WT</span>
+        <input type="range" id="faceWt" min="0" max="100" step="5" value="50">
+        <span class="wval" id="faceWtVal">50%</span>
+      </div>
+      <div class="computed">
+        <span class="clabel">PHYSICAL (COMPUTED)</span>
+        <span class="cval" id="physComp">—</span>
+      </div>
+    </div>
+
+    <div class="panel" id="tourMentalPanel">
+      <div class="sec-head">Mental Score</div>
+      <div class="field">
+        <div class="field-label">INTELLECT <span class="live" id="intDisplay">—</span></div>
+        <input type="number" id="intellect" min="0" max="10" step="0.5" placeholder="0 – 10">
+      </div>
+      <div class="field">
+        <div class="field-label">PERSONALITY <span class="live" id="persDisplay">—</span></div>
+        <input type="number" id="personality" min="0" max="10" step="0.5" placeholder="0 – 10">
+      </div>
+      <div class="field">
+        <div class="field-label">AMBITION <span class="live" id="ambDisplay">—</span></div>
+        <input type="number" id="ambition" min="0" max="10" step="0.5" placeholder="0 – 10">
+      </div>
+      <div class="field">
+        <div class="field-label">EMOTIONAL MATURITY <span class="live" id="emoDisplay">—</span></div>
+        <input type="number" id="emotional" min="0" max="10" step="0.5" placeholder="0 – 10">
+      </div>
+      <div class="field">
+        <div class="field-label">VALUES ALIGNMENT <span class="live" id="valDisplay">—</span></div>
+        <input type="number" id="values" min="0" max="10" step="0.5" placeholder="0 – 10">
+      </div>
+      <div class="div"></div>
+      <div style="font-family:var(--f-mono);font-size:0.52rem;color:var(--muted);letter-spacing:0.11em;margin-bottom:6px;">MENTAL WEIGHTS</div>
+      <div class="weight-row"><span class="wlabel">INTELLECT</span><input type="range" class="mwt" data-id="wInt" min="0" max="100" step="5" value="20"><span class="wval" id="wInt">20%</span></div>
+      <div class="weight-row"><span class="wlabel">PERSONALITY</span><input type="range" class="mwt" data-id="wPers" min="0" max="100" step="5" value="20"><span class="wval" id="wPers">20%</span></div>
+      <div class="weight-row"><span class="wlabel">AMBITION</span><input type="range" class="mwt" data-id="wAmb" min="0" max="100" step="5" value="20"><span class="wval" id="wAmb">20%</span></div>
+      <div class="weight-row"><span class="wlabel">EMOTIONAL</span><input type="range" class="mwt" data-id="wEmo" min="0" max="100" step="5" value="20"><span class="wval" id="wEmo">20%</span></div>
+      <div class="weight-row"><span class="wlabel">VALUES</span><input type="range" class="mwt" data-id="wVal" min="0" max="100" step="5" value="20"><span class="wval" id="wVal">20%</span></div>
+      <div class="computed" style="margin-top:8px;">
+        <span class="clabel">MENTAL (COMPUTED)</span>
+        <span class="cval" id="mentComp">—</span>
+      </div>
+    </div>
+
+    <div class="panel" id="tourStatusPanel">
+      <div class="sec-head">Current Status (Fact)</div>
+      <div class="status-grid">
+        <button class="status-btn" data-status="prospect"><span class="semoji">👁️</span>JUST MET</button>
+        <button class="status-btn" data-status="talking"><span class="semoji">💬</span>TALKING STAGE</button>
+        <button class="status-btn" data-status="dating"><span class="semoji">💑</span>DATING</button>
+        <button class="status-btn" data-status="exclusive"><span class="semoji">🔐</span>EXCLUSIVE</button>
+        <button class="status-btn" data-status="friend"><span class="semoji">👥</span>ESTABLISHED FRIEND</button>
+        <button class="status-btn" data-status="complicated"><span class="semoji">🌀</span>COMPLICATED</button>
+        <button class="status-btn" data-status="ex"><span class="semoji">🥀</span>EX</button>
+      </div>
+    </div>
+
+    <div class="panel" id="tourIntentPanel" style="display:flex;flex-direction:column;">
+      <div class="sec-head">Your Intent (Goal)</div>
+      <div id="intentHint" class="hint-text">Select a status above first</div>
+      <div class="intent-grid" id="intentGridWrap">
+        <button class="intent-btn hidden-opt" data-intent="pursue"><span class="iemoji">🎯</span>PURSUE</button>
+        <button class="intent-btn hidden-opt" data-intent="escalate"><span class="iemoji">💍</span>GET SERIOUS</button>
+        <button class="intent-btn hidden-opt" data-intent="casual"><span class="iemoji">🔥</span>KEEP CASUAL</button>
+        <button class="intent-btn hidden-opt" data-intent="friend"><span class="iemoji">👫</span>STAY FRIENDS</button>
+        <button class="intent-btn hidden-opt" data-intent="reconnect"><span class="iemoji">🔄</span>RECONSIDER</button>
+        <button class="intent-btn hidden-opt" data-intent="exit"><span class="iemoji">🚪</span>WALK AWAY</button>
+      </div>
+      <div style="flex:1;"></div>
+      <div class="err" id="errMsg"></div>
+      <button class="plot-btn" id="plotBtn">Analyse &amp; Log</button>
+    </div>
+  </div>
+
+  <div class="result-box" id="resultBox">
+    <div class="sec-head">Analysis Result</div>
+    <div class="result-name" id="rName">—</div>
+    <div class="result-sub" id="rDesc">—</div>
+    <div class="zone-breakdown" id="zoneBreakdown"></div>
+    <div class="intent-result" id="intentResult"></div>
+    <div class="bias-notice" id="biasNotice" style="display:none;">
+      <span style="color:var(--acc);font-weight:700;">⚡ STATUS BIAS APPLIED</span><br>
+      <span id="biasExplain"></span><br>
+      <span style="color:var(--muted);">RAW scores are stored. EFFECTIVE scores are plotted.</span>
+    </div>
+    <div class="coord-strip">
+      <div class="coord"><span class="coord-l">Raw Physical</span><span class="coord-v" id="cPhys">—</span></div>
+      <div class="coord"><span class="coord-l">Raw Mental</span><span class="coord-v" id="cMent">—</span></div>
+      <div class="coord"><span class="coord-l">Eff. Physical</span><span class="coord-v" id="cEffPhys" style="color:var(--acc2)">—</span></div>
+      <div class="coord"><span class="coord-l">Eff. Mental</span><span class="coord-v" id="cEffMent" style="color:var(--acc2)">—</span></div>
+      <div class="coord"><span class="coord-l">Face</span><span class="coord-v" id="cFace">—</span></div>
+      <div class="coord"><span class="coord-l">Body</span><span class="coord-v" id="cBody">—</span></div>
+      <div class="coord"><span class="coord-l">Intellect</span><span class="coord-v" id="cInt">—</span></div>
+      <div class="coord"><span class="coord-l">Personality</span><span class="coord-v" id="cPers">—</span></div>
+      <div class="coord"><span class="coord-l">Ambition</span><span class="coord-v" id="cAmb">—</span></div>
+      <div class="coord"><span class="coord-l">Emotional</span><span class="coord-v" id="cEmo">—</span></div>
+      <div class="coord"><span class="coord-l">Values</span><span class="coord-v" id="cVal">—</span></div>
+    </div>
+  </div>
+
+  <div class="graph-box" id="graphBox">
+    <div class="sec-head">Attraction Map</div>
+    <svg id="graph" viewBox="0 0 580 440" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="legend-wrap" id="legendWrap"></div>
+  </div>
+
+</div><!-- /plot -->
+
+<div class="page" id="page-log">
+  <div class="sec-head">Mission Log</div>
+
+  <div class="ai-panel">
+    <div class="sec-head" style="margin-bottom:0.75rem;">🧠 Bias &amp; Pattern Detector</div>
+    <div style="font-size:0.8rem;color:var(--text2);margin-bottom:0.9rem;line-height:1.6;">Looks at everyone you've logged and gently points out the patterns you might not see from the inside — like a friend who's been paying attention. Needs at least 2 entries.</div>
+
+    <button class="ai-btn" id="copyOpenBtn">📋 COPY PROMPT &amp; OPEN CLAUDE</button>
+    <div class="ai-note" style="margin-top:8px;">Works everywhere, no setup. Copies your analysis to the clipboard — scrambled, so it's not readable at a glance — and opens Claude in a new tab. Just paste and hit send; Claude unscrambles it automatically.</div>
+
+    <div id="autoAnalysisWrap" style="display:none;margin-top:0.9rem;padding-top:0.9rem;border-top:1px dashed var(--border);">
+      <button class="icon-btn" id="aiAnalysisBtn" style="width:100%;justify-content:center;">⚡ RUN AUTOMATICALLY</button>
+    </div>
+    <div id="autoAnalysisHint" class="ai-note" style="margin-top:8px;">Set up your own connection under the <strong style="color:var(--acc);">MORE</strong> tab to run this automatically instead of copy-pasting.</div>
+
+    <div class="ai-result" id="aiAnalysisResult"></div>
+  </div>
+
+  <div class="log-toolbar">
+    <span class="log-toolbar-label">SORT</span>
+    <button class="sort-btn active" data-sort="newest">NEWEST</button>
+    <button class="sort-btn" data-sort="oldest">OLDEST</button>
+    <button class="sort-btn" data-sort="phys-hi">PHYS ↑</button>
+    <button class="sort-btn" data-sort="phys-lo">PHYS ↓</button>
+    <button class="sort-btn" data-sort="ment-hi">MENTAL ↑</button>
+    <button class="sort-btn" data-sort="ment-lo">MENTAL ↓</button>
+    <span class="log-toolbar-label" style="margin-left:6px;">FILTER</span>
+    <button class="filter-btn active" data-filter="all">ALL</button>
+    <button class="filter-btn" data-filter="intent-pursue">🎯 PURSUE</button>
+    <button class="filter-btn" data-filter="intent-escalate">💍 SERIOUS</button>
+    <button class="filter-btn" data-filter="intent-casual">🔥 CASUAL</button>
+    <button class="filter-btn" data-filter="intent-friend">👫 FRIEND</button>
+    <button class="filter-btn" data-filter="intent-exit">🚪 EXIT</button>
+    <button class="filter-btn" data-filter="status-dating">💑 DATING</button>
+    <button class="filter-btn" data-filter="status-ex">🥀 EX</button>
+  </div>
+  <div class="log-empty" id="logEmpty">NO ENTRIES YET — PLOT SOMEONE TO BEGIN</div>
+  <div class="log-grid" id="logGrid"></div>
+</div>
+
+<div class="page" id="page-map">
+  <div class="sec-head">Zone Reference Map</div>
+  <div class="panel">
+    <svg id="refMap" viewBox="0 0 580 480" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;"></svg>
+  </div>
+  <div class="legend-wrap" id="refLegend" style="margin-top:0.8rem;"></div>
+
+  <button class="icon-btn" id="zoneEditToggle" style="margin-top:1.15rem;width:100%;justify-content:center;">✎ EDIT ZONE BOUNDARIES</button>
+  <div class="panel" id="zoneEditorPanel" style="display:none;margin-top:0.7rem;">
+    <div class="sec-head">Zone Boundaries (0–10 scale)</div>
+    <div id="zoneEditorList"></div>
+    <button class="icon-btn" id="zoneResetBtn" style="margin-top:0.8rem;width:100%;justify-content:center;">↺ RESET TO DEFAULTS</button>
+  </div>
+</div>
+
+<div class="page" id="page-about">
+  <div class="sec-head">About Puzzles</div>
+  <div class="panel">
+    <p style="font-size:0.9rem;line-height:1.8;color:var(--text2);margin-bottom:1rem;">Every good relationship theory starts the same way: a whiteboard, a marker, and a friend who's a little too confident about plotting people on a chart. Ours started with a graph — two axes, a handful of zones, and one suspiciously specific corner labeled the Zone of Pain. We didn't invent the idea. We just gave it real math, a database, and slightly too much free time.</p>
+
+    <div class="sec-head" style="margin-top:1.6rem;">Why Is It Called Puzzles?</div>
+    <p style="font-family:var(--f-disp);font-style:italic;font-size:1.1rem;color:var(--acc);margin-bottom:0.4rem;">That's the puzzle!</p>
+    <p style="font-size:0.85rem;color:var(--text2);margin-bottom:1rem;">(We'll see ourselves out.)</p>
+
+    <div class="sec-head" style="margin-top:1.6rem;">Is It Any Good?</div>
+    <p style="font-size:0.9rem;line-height:1.8;color:var(--text2);margin-bottom:1rem;">Look, we're not going to tell you it's <strong style="color:var(--text);">legen — wait for it — dary</strong>. That would be excessive. But it's pretty good. It's genuinely, believably, defensibly pretty good.</p>
+
+    <div class="sec-head" style="margin-top:1.6rem;">What We Actually Believe</div>
+    <p style="font-size:0.9rem;line-height:1.8;color:var(--text2);margin-bottom:1rem;">People aren't spreadsheets. But your patterns kind of are — and patterns are exactly the sort of thing you can't see while you're standing inside them. That's the whole point here: not to reduce anyone to a number, but to catch the thing you keep doing without noticing you're doing it.</p>
+
+    <div class="sec-head" style="margin-top:1.6rem;">The Legal-Sounding Part</div>
+    <p style="font-size:0.9rem;line-height:1.8;color:var(--text2);">Your data stays on your device. We're not a dating app, a matchmaking service, or a replacement for an actual conversation with an actual person you trust. We're a mirror with a sense of humor. Use responsibly. Text back.</p>
+  </div>
+</div>
+
+<div class="page" id="page-more">
+  <div class="sec-head">More</div>
+
+  <div class="panel" style="margin-bottom:1.1rem;border-color:var(--acc);">
+    <div class="sec-head" style="margin-bottom:0.7rem;">🤞 Your Privacy</div>
+    <p style="font-size:0.88rem;line-height:1.75;color:var(--text2);">Pinky promise: your data stays right where you put it — in your own browser, on your own device. No servers quietly watching, no "trusted partners," no fine print doing something sneaky. The only exception is the one button you choose to press yourself, which kicks off a brief, consensual chat about your life choices — and nothing else, ever, without you asking for it.</p>
+  </div>
+
+  <div class="panel" style="margin-bottom:1.1rem;">
+    <div class="sec-head" style="margin-bottom:0.75rem;">🔑 Your Own AI Connection</div>
+    <p style="font-size:0.82rem;color:var(--text2);margin-bottom:0.9rem;line-height:1.6;">To run the Bias &amp; Pattern Analysis anywhere — your phone, your laptop, not just here — paste in your own key below. It's stored only in your browser, never sent anywhere except directly to power the analysis when you ask for it.</p>
+    <div class="field" style="margin-bottom:0.7rem;">
+      <div class="field-label">API KEY <span style="color:var(--muted);font-weight:400;text-transform:none;">(get one at console.anthropic.com)</span></div>
+      <div style="display:flex;gap:6px;">
+        <input type="password" id="claudeKeyInput" placeholder="sk-ant-..." style="flex:1;">
+        <button class="icon-btn" id="saveClaudeKeyBtn">SAVE</button>
+      </div>
+    </div>
+    <div id="claudeKeyStatus" style="font-family:var(--f-mono);font-size:0.62rem;color:var(--muted);letter-spacing:0.05em;"></div>
+  </div>
+
+  <div class="panel">
+    <div class="sec-head" style="margin-bottom:0.75rem;">⚙ Advanced — Custom Backend</div>
+    <p style="font-size:0.8rem;color:var(--text2);margin-bottom:0.9rem;line-height:1.6;">Only needed if someone set up a shared backend for you to use instead of your own key (see puzzles-backend/README.md).</p>
+    <div class="field" style="margin-bottom:0.7rem;">
+      <div class="field-label">BACKEND URL <span style="color:var(--muted);font-weight:400;text-transform:none;">(optional)</span></div>
+      <div style="display:flex;gap:6px;">
+        <input type="text" id="backendUrlInput" placeholder="https://your-project.vercel.app/api/analyze" style="flex:1;">
+        <button class="icon-btn" id="saveBackendUrlBtn">SAVE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <button class="modal-close" id="modalClose">✕</button>
+    <div class="modal-title" id="modalTitle">EDIT ENTRY</div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="guideModal">
+  <div class="modal" style="max-width:460px;">
+    <button class="modal-close" id="guideModalClose">✕</button>
+    <div class="modal-title">How Puzzles Works</div>
+    <p style="font-size:0.85rem;color:var(--text2);line-height:1.6;margin-bottom:1.3rem;">Four steps, in order. Nothing else to figure out.</p>
+
+    <div style="display:flex;gap:12px;margin-bottom:1.2rem;">
+      <div style="font-family:var(--f-disp);font-size:1.4rem;font-weight:700;color:var(--acc);flex-shrink:0;width:28px;">1</div>
+      <div>
+        <div style="font-family:var(--f-disp);font-weight:700;font-size:1rem;margin-bottom:3px;">🧩 PLOT</div>
+        <div style="font-size:0.83rem;color:var(--text2);line-height:1.55;">Enter their name and gender, rate them, set your Status and Intent, then hit <strong style="color:var(--text);">Analyse &amp; Log</strong>. This saves them.</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-bottom:1.2rem;">
+      <div style="font-family:var(--f-disp);font-size:1.4rem;font-weight:700;color:var(--acc);flex-shrink:0;width:28px;">2</div>
+      <div>
+        <div style="font-family:var(--f-disp);font-weight:700;font-size:1rem;margin-bottom:3px;">📋 LOG</div>
+        <div style="font-size:0.83rem;color:var(--text2);line-height:1.55;">See everyone you've logged. Once you've got at least 2 people in there, hit <strong style="color:var(--text);">Copy Prompt &amp; Open Claude</strong> — it pastes your data into a new Claude chat for you, where you'll get an honest read on your patterns.</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-bottom:1.2rem;">
+      <div style="font-family:var(--f-disp);font-size:1.4rem;font-weight:700;color:var(--acc);flex-shrink:0;width:28px;">3</div>
+      <div>
+        <div style="font-family:var(--f-disp);font-weight:700;font-size:1rem;margin-bottom:3px;">🗺️ MAP</div>
+        <div style="font-size:0.83rem;color:var(--text2);line-height:1.55;">See where everyone lands on the chart. Optional: you can even edit where the zone boundaries sit.</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-bottom:1.4rem;">
+      <div style="font-family:var(--f-disp);font-size:1.4rem;font-weight:700;color:var(--acc);flex-shrink:0;width:28px;">4</div>
+      <div>
+        <div style="font-family:var(--f-disp);font-weight:700;font-size:1rem;margin-bottom:3px;">ℹ️ ABOUT / MORE</div>
+        <div style="font-size:0.83rem;color:var(--text2);line-height:1.55;">The fun stuff and settings — optional, come back anytime.</div>
+      </div>
+    </div>
+
+    <button class="plot-btn" id="guideGotItBtn">Got it, let's go →</button>
+    <button class="icon-btn" id="relaunchTourBtn" style="width:100%;justify-content:center;margin-top:8px;">👉 Show me on the page</button>
+  </div>
+</div>
+
+<div class="tour-dim" id="tourDim"></div>
+<div class="tour-tooltip" id="tourTooltip">
+  <div class="tour-arrow top" id="tourArrow"></div>
+  <div class="tour-tooltip-text" id="tourText">—</div>
+  <div class="tour-tooltip-footer">
+    <span class="tour-step-count" id="tourStepCount">1 / 7</span>
+    <div class="tour-btns">
+      <button class="tour-btn tour-btn-skip" id="tourSkipBtn">SKIP</button>
+      <button class="tour-btn tour-btn-next" id="tourNextBtn">NEXT →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="text/javascript">
+var zones=[
+  {id:'friend',    name:'Friend Zone',        desc:'High mental, low physical. Strong platonic pull — the mind connects but the spark is missing.',             color:'#4a9eff',minP:0,  maxP:4.5,minM:5.5,maxM:10},
+  {id:'dating',    name:'Dating Zone',         desc:'Balanced across the board. Good potential — pursue with clarity and intention.',                           color:'#e8734a',minP:4,  maxP:7.5,minM:4,  maxM:8 },
+  {id:'marriage',  name:'Marriage Material',   desc:'High in both dimensions. Long-term, committed, the full package.',                                        color:'#2ecc71',minP:6.5,maxP:10, minM:7,  maxM:10},
+  {id:'fbuddy',    name:'F-Buddy',             desc:'Physical pull strong, mental connection low. Casual arrangement — keep expectations clear on both sides.', color:'#e74c3c',minP:6,  maxP:10, minM:0,  maxM:4.5},
+  {id:'pain',      name:'Zone of Pain',        desc:'Low on both axes. Walk away. Nothing good grows here.',                                                   color:'#9b59b6',minP:0,  maxP:3.5,minM:0,  maxM:4},
+  {id:'awkward',   name:'Awkwardness',         desc:'Limbo territory — no clear pull in either direction. Draw your lines before things get messy.',           color:'#e67e22',minP:3.5,maxP:6.5,minM:3.5,maxM:5.5},
+  {id:'temptation',name:'Rel. Temptation',     desc:'High mental pull, low physical. The emotional connection could blur lines — know what you want first.',   color:'#e91e8c',minP:0,  maxP:2.5,minM:8.5,maxM:10},
+  {id:'null',      name:'Null Set',            desc:'Off the charts. Theoretical perfection — practically unreachable.',                                       color:'#95a5a6',minP:9,  maxP:10, minM:9,  maxM:10}
+];
+var ZONE_DEFAULTS=JSON.parse(JSON.stringify(zones));
+var ZONES_KEY='puzzles_zone_config';
+function saveZoneConfig(){try{localStorage.setItem(ZONES_KEY,JSON.stringify(zones.map(function(z){return{id:z.id,minP:z.minP,maxP:z.maxP,minM:z.minM,maxM:z.maxM};})));}catch(e){}}
+function loadZoneConfig(){
+  try{
+    var sv=localStorage.getItem(ZONES_KEY);
+    if(!sv)return;
+    var cfg=JSON.parse(sv);
+    cfg.forEach(function(c){
+      var z=zones.find(function(x){return x.id===c.id;});
+      if(z){z.minP=c.minP;z.maxP=c.maxP;z.minM=c.minM;z.maxM=c.maxM;}
+    });
+  }catch(e){}
+}
+loadZoneConfig();
+
+var PRIORITY=['null','marriage','temptation','fbuddy','pain','friend','dating','awkward'];
+
+var STATUS_CONFIG={
+  prospect:    {label:'JUST MET',            emoji:'👁️', color:'#7a8899'},
+  talking:     {label:'TALKING STAGE',       emoji:'💬', color:'#4fa8d8'},
+  dating:      {label:'DATING',              emoji:'💑', color:'#2ecc71'},
+  exclusive:   {label:'EXCLUSIVE',           emoji:'🔐', color:'#e8a020'},
+  friend:      {label:'ESTABLISHED FRIEND',  emoji:'👥', color:'#4a8fff'},
+  complicated: {label:'COMPLICATED',         emoji:'🌀', color:'#e67e22'},
+  ex:          {label:'EX',                  emoji:'🥀', color:'#9b59b6'}
+};
+
+var INTENT_CONFIG={
+  pursue:    {label:'PURSUE',       emoji:'🎯', color:'#2ecc71'},
+  escalate:  {label:'GET SERIOUS',  emoji:'💍', color:'#e8a020'},
+  casual:    {label:'KEEP CASUAL',  emoji:'🔥', color:'#e74c3c'},
+  friend:    {label:'STAY FRIENDS', emoji:'👫', color:'#4a8fff'},
+  reconnect: {label:'RECONSIDER',   emoji:'🔄', color:'#e67e22'},
+  exit:      {label:'WALK AWAY',    emoji:'🚪', color:'#7a8899'}
+};
+
+var STATUS_INTENT_MAP={
+  prospect:    ['pursue','casual','friend','exit'],
+  talking:     ['pursue','casual','friend','exit'],
+  dating:      ['escalate','casual','friend','exit'],
+  exclusive:   ['escalate','friend','exit'],
+  friend:      ['pursue','casual','exit'],
+  complicated: ['reconnect','casual','friend','exit'],
+  ex:          ['reconnect','friend','exit']
+};
+
+var INTENT_ADVICE={
+'friend+pursue':'Zone says platonic — confirm mutual attraction before shifting the dynamic.',
+'friend+escalate':'Escalating from Friend Zone is a steep climb — proceed only with a clear signal from them.',
+'friend+casual':'Friend Zone + casual intent is a bad mix — you risk the friendship for nothing.',
+'friend+friend':'Aligned. Keep the friendship steady and enjoy it for what it is.',
+'friend+reconnect':'Reassess whether feelings have genuinely changed on either side before acting.',
+'friend+exit':'Valid if the friendship no longer serves you — a clean exit.',
+'dating+pursue':'Solid match — pursue with clarity and confidence.',
+'dating+escalate':'Good instinct — Dating Zone can absolutely support a serious push.',
+'dating+casual':'Mismatch — they have real potential, casual undersells it.',
+'dating+friend':'Downgrade call — valid if the spark genuinely isn\'t there for you.',
+'dating+reconnect':'Not applicable here, but if trust needs rebuilding, take it slow.',
+'dating+exit':'Walking away from real potential — be sure it\'s not just cold feet.',
+'marriage+pursue':'Top-tier match — pursue this seriously, not casually.',
+'marriage+escalate':'Exactly the right call — this is what Marriage Material is for.',
+'marriage+casual':'Big mismatch — treating a top-tier match like a fling will cost you the connection.',
+'marriage+friend':'Benching a rare match — reconsider before you let this go.',
+'marriage+reconnect':'Worth genuinely re-engaging if things went sideways before.',
+'marriage+exit':'Walking away from a near-perfect match — make sure it\'s principle, not fear.',
+'fbuddy+pursue':'Physical pull is there but mental depth is thin — pursuing seriously may leave you wanting more.',
+'fbuddy+escalate':'Risky — getting serious here means committing before the mental connection catches up.',
+'fbuddy+casual':'Zone and intent are aligned — proceed with full transparency.',
+'fbuddy+friend':'Can work, but be clear you\'re not leading them on physically.',
+'fbuddy+reconnect':'Fine to revisit if the dynamic has genuinely changed.',
+'fbuddy+exit':'Correct call if you want more than physical chemistry.',
+'pain+pursue':'Low on both axes — raise your standard before pursuing.',
+'pain+escalate':'Not recommended — there\'s little foundation to build on here.',
+'pain+casual':'Even casual here tends to end in regret.',
+'pain+friend':'Only if it\'s genuinely platonic with zero lingering expectations.',
+'pain+reconnect':'Reconsider carefully — ask what actually changed.',
+'pain+exit':'Correct. Move forward.',
+'awkward+pursue':'Undefined territory — get a clearer read before making a move.',
+'awkward+escalate':'Too early to get serious — the zone itself isn\'t settled yet.',
+'awkward+casual':'Ambiguity plus casual intent can still spiral into complications.',
+'awkward+friend':'Safe default while things are unclear.',
+'awkward+reconnect':'Worth an honest conversation to clarify where things stand.',
+'awkward+exit':'Avoiding ambiguity altogether is a valid choice.',
+'temptation+pursue':'High mental pull, low physical — pursuing works only if you accept that trade-off.',
+'temptation+escalate':'Getting serious here means committing despite the physical gap — think it through.',
+'temptation+casual':'Bad fit — they\'re mentally invested, casual will hurt them and complicate you.',
+'temptation+friend':'Best outcome for this zone if physical attraction genuinely isn\'t there.',
+'temptation+reconnect':'Revisit only if your read on the physical side has changed.',
+'temptation+exit':'Clean exit from a complex, emotionally loaded situation.',
+'null+pursue':'Unicorn-tier — pursue without overthinking it.',
+'null+escalate':'Getting serious with a Null Set match is a rare and correct move.',
+'null+casual':'People at this level see through unclear intent instantly — don\'t undersell it.',
+'null+friend':'Friendzoning perfection is a choice you\'ll want to be sure about.',
+'null+reconnect':'If this cooled off before, it\'s worth genuine reconsideration.',
+'null+exit':'No interest in a Null Set? Worth some honest self-reflection.'
+};
+
+var STATUS_MODIFIERS={
+  prospect:    {dP:0,    dM:0,    note:'No bias — first impression, clean read.'},
+  talking:     {dP:0.2,  dM:0.3,  note:'Talking-stage bias: early interest nudges both axes slightly upward.'},
+  dating:      {dP:0.5,  dM:0.5,  note:'Dating bias: attachment inflates both axes by +0.5.'},
+  exclusive:   {dP:0.8,  dM:0.8,  note:'Exclusive bias: deepest attachment — strongest rose-tint effect.'},
+  friend:      {dP:-0.3, dM:0.3,  note:'Established-friend bias: physical underrated from platonic familiarity, mental known clearly.'},
+  complicated: {dP:0,    dM:-0.8, note:'Complicated bias: mental read is muddied — you don\'t have full clarity yet.'},
+  ex:          {dP:-0.5, dM:1.0,  note:'Ex bias: physical appeal fades, emotional memory lingers — pulled toward Awkwardness.'}
+};
+function clamp(v){return Math.max(0,Math.min(10,v));}
+function applyStatusBias(phys,ment,status){
+  var mod=STATUS_MODIFIERS[status]||{dP:0,dM:0,note:'No bias.'};
+  var ep=clamp(phys+mod.dP), em=clamp(ment+mod.dM);
+  if(status==='ex'){ep=clamp(ep*0.85+5*0.15);em=clamp(em*0.85+4.5*0.15);}
+  if(status==='exclusive'&&ep>=5.5&&em>=5.5){ep=clamp(ep+0.3);em=clamp(em+0.3);}
+  return{effP:ep,effM:em,note:mod.note,dP:mod.dP,dM:mod.dM};
+}
+var log=[];
+var selectedIntent=null;
+var selectedStatus=null;
+var editingId=null;
+var currentSort='newest';
+var currentFilter='all';
+var currentProfile=null;
+
+var PROFILES_KEY='puzzles_profiles';
+var CURRENT_PROFILE_KEY='puzzles_current_profile';
+function getProfiles(){try{return JSON.parse(localStorage.getItem(PROFILES_KEY))||[];}catch(e){return[];}}
+function saveProfiles(list){try{localStorage.setItem(PROFILES_KEY,JSON.stringify(list));}catch(e){}}
+function logKeyFor(name){return 'puzzles_log::'+name;}
+function loadLogForProfile(name){try{var sv=localStorage.getItem(logKeyFor(name));log=sv?JSON.parse(sv):[];}catch(e){log=[];}}
+function saveLog(){try{localStorage.setItem(logKeyFor(currentProfile),JSON.stringify(log));}catch(e){}}
+function setCurrentProfile(name){
+  currentProfile=name;
+  try{localStorage.setItem(CURRENT_PROFILE_KEY,name);}catch(e){}
+  document.getElementById('profileNameDisplay').textContent=name;
+  loadLogForProfile(name);
+  loadYourGender();
+  renderProfileList();
+  renderLog();
+}
+function renderProfileList(){
+  var list=getProfiles();
+  var c=document.getElementById('profileList');
+  c.innerHTML='';
+  list.forEach(function(p){
+    var row=document.createElement('div');
+    row.className='dd-opt'+(p===currentProfile?' active':'');
+    row.style.justifyContent='space-between';
+    var nameSpan=document.createElement('span');
+    nameSpan.innerHTML='👤 '+p;
+    nameSpan.style.cursor='pointer';nameSpan.style.flex='1';
+    nameSpan.addEventListener('click',function(){setCurrentProfile(p);document.getElementById('profilePanel').classList.remove('open');showToast('SWITCHED TO: '+p.toUpperCase());});
+    var editBtn=document.createElement('span');
+    editBtn.textContent='✏️';editBtn.style.cursor='pointer';editBtn.style.marginLeft='8px';editBtn.style.opacity='0.7';
+    editBtn.addEventListener('click',function(ev){ev.stopPropagation();startRenameProfile(p,row);});
+    var delBtn=document.createElement('span');
+    delBtn.textContent='🗑️';delBtn.style.cursor='pointer';delBtn.style.marginLeft='8px';delBtn.style.opacity='0.7';
+    delBtn.addEventListener('click',function(ev){ev.stopPropagation();confirmDeleteProfile(p,row);});
+    row.appendChild(nameSpan);row.appendChild(editBtn);row.appendChild(delBtn);
+    c.appendChild(row);
+  });
+}
+function confirmDeleteProfile(name,rowEl){
+  var list=getProfiles();
+  if(list.length<=1){showToast('CAN\'T DELETE YOUR ONLY PROFILE');return;}
+  rowEl.innerHTML='';
+  var warn=document.createElement('span');
+  warn.textContent='Delete "'+name+'" and its whole log?';
+  warn.style.fontSize='0.68rem';warn.style.color='var(--red)';warn.style.flex='1';
+  var yesBtn=document.createElement('button');
+  yesBtn.textContent='DELETE';
+  yesBtn.style.background='var(--red)';yesBtn.style.color='#fff';yesBtn.style.border='none';
+  yesBtn.style.borderRadius='var(--btn-radius)';yesBtn.style.padding='4px 9px';yesBtn.style.cursor='pointer';
+  yesBtn.style.fontFamily='var(--f-mono)';yesBtn.style.fontSize='0.58rem';yesBtn.style.marginLeft='6px';
+  var noBtn=document.createElement('button');
+  noBtn.textContent='CANCEL';
+  noBtn.style.background='transparent';noBtn.style.color='var(--text2)';noBtn.style.border='1px solid var(--border)';
+  noBtn.style.borderRadius='var(--btn-radius)';noBtn.style.padding='4px 9px';noBtn.style.cursor='pointer';
+  noBtn.style.fontFamily='var(--f-mono)';noBtn.style.fontSize='0.58rem';noBtn.style.marginLeft='6px';
+  yesBtn.addEventListener('click',function(){
+    var newList=list.filter(function(x){return x!==name;});
+    saveProfiles(newList);
+    try{localStorage.removeItem(logKeyFor(name));localStorage.removeItem('puzzles_your_gender::'+name);}catch(e){}
+    if(currentProfile===name){setCurrentProfile(newList[0]);}
+    else{renderProfileList();}
+    showToast('DELETED: '+name.toUpperCase());
+  });
+  noBtn.addEventListener('click',function(){renderProfileList();});
+  rowEl.appendChild(warn);rowEl.appendChild(yesBtn);rowEl.appendChild(noBtn);
+}
+function startRenameProfile(oldName,rowEl){
+  rowEl.innerHTML='';
+  var input=document.createElement('input');
+  input.type='text';input.value=oldName;
+  input.style.fontSize='0.75rem';input.style.padding='5px 7px';input.style.flex='1';
+  var saveBtn=document.createElement('button');
+  saveBtn.textContent='✓';saveBtn.style.marginLeft='6px';saveBtn.style.background='var(--acc)';saveBtn.style.color='#fff';
+  saveBtn.style.border='none';saveBtn.style.borderRadius='var(--btn-radius)';saveBtn.style.padding='4px 9px';saveBtn.style.cursor='pointer';
+  rowEl.appendChild(input);rowEl.appendChild(saveBtn);
+  input.focus();input.select();
+  function doRename(){
+    var newName=input.value.trim();
+    if(!newName||newName===oldName){renderProfileList();return;}
+    var list=getProfiles();
+    if(list.indexOf(newName)>=0){showToast('NAME ALREADY IN USE');renderProfileList();return;}
+    var idx=list.indexOf(oldName);
+    if(idx>=0)list[idx]=newName;
+    saveProfiles(list);
+    try{var oldData=localStorage.getItem(logKeyFor(oldName));if(oldData){localStorage.setItem(logKeyFor(newName),oldData);localStorage.removeItem(logKeyFor(oldName));}}catch(e){}
+    if(currentProfile===oldName){currentProfile=newName;try{localStorage.setItem(CURRENT_PROFILE_KEY,newName);}catch(e){}document.getElementById('profileNameDisplay').textContent=newName;}
+    renderProfileList();
+    showToast('RENAMED TO: '+newName.toUpperCase());
+  }
+  saveBtn.addEventListener('click',doRename);
+  input.addEventListener('keydown',function(e){if(e.key==='Enter')doRename();if(e.key==='Escape')renderProfileList();});
+}
+function initProfiles(){
+  var list=getProfiles();
+  if(list.length===0){ list=['Player 1']; saveProfiles(list); }
+  var saved=null; try{saved=localStorage.getItem(CURRENT_PROFILE_KEY);}catch(e){}
+  var use=(saved&&list.indexOf(saved)>=0)?saved:list[0];
+  currentProfile=use;
+  document.getElementById('profileNameDisplay').textContent=use;
+  loadLogForProfile(use);
+  loadYourGender();
+  renderProfileList();
+}
+document.getElementById('addProfileBtn').addEventListener('click',function(){
+  var input=document.getElementById('newProfileInput');
+  var name=input.value.trim();
+  if(!name)return;
+  var list=getProfiles();
+  if(list.indexOf(name)<0){list.push(name);saveProfiles(list);}
+  input.value='';
+  setCurrentProfile(name);
+  document.getElementById('profilePanel').classList.remove('open');
+  showToast('PROFILE CREATED: '+name.toUpperCase());
+});
+document.getElementById('newProfileInput').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('addProfileBtn').click();});
+
+/* ═══ ZONE BREAKDOWN — fixed to show more than a forced 2-way split ═══ */
+function zoneDist(z,p,m){var cp=Math.max(z.minP,Math.min(z.maxP,p)),cm=Math.max(z.minM,Math.min(z.maxM,m));return Math.sqrt((p-cp)*(p-cp)+(m-cm)*(m-cm));}
+
+function getZone(p,m){
+  var i,j,id,z;
+  for(i=0;i<PRIORITY.length;i++){id=PRIORITY[i];for(j=0;j<zones.length;j++){z=zones[j];if(z.id===id&&p>=z.minP&&p<=z.maxP&&m>=z.minM&&m<=z.maxM)return z;}}
+  var best=zones[0],bd=9999,k;
+  for(k=0;k<zones.length;k++){var d=zoneDist(zones[k],p,m);if(d<bd){bd=d;best=zones[k];}}
+  return best;
+}
+
+/* Returns up to 4 zones with proportional weights (inverse-distance, softened),
+   instead of a rigid primary/secondary 2-way split. Distances are converted to
+   weights via 1/(dist+eps)^1.5 so nearby zones dominate but distant ones taper
+   off naturally rather than being forced into an artificial 50/50. */
+function getZoneBreakdown(p,m){
+  var eps=0.6;
+  var scored=zones.map(function(z){
+    var d=zoneDist(z,p,m);
+    var w=1/Math.pow(d+eps,1.5);
+    return{zone:z,dist:d,weight:w};
+  });
+  scored.sort(function(a,b){return a.dist-b.dist;});
+  var totalAll=scored.reduce(function(s,x){return s+x.weight;},0);
+  // keep zones until they'd individually round to 0%, cap at top 4
+  var kept=[];
+  for(var i=0;i<scored.length&&kept.length<4;i++){
+    var pct=(scored[i].weight/totalAll)*100;
+    if(kept.length>=2&&pct<6)break; // always show at least top 2, then taper
+    kept.push(scored[i]);
+  }
+  var keptTotal=kept.reduce(function(s,x){return s+x.weight;},0);
+  var breakdown=kept.map(function(x){return{zone:x.zone,pct:Math.round((x.weight/keptTotal)*100)};});
+  // fix rounding so percentages sum to exactly 100
+  var sum=breakdown.reduce(function(s,x){return s+x.pct;},0);
+  if(breakdown.length>0)breakdown[0].pct+=(100-sum);
+  return breakdown;
+}
+function computePhys(){
+  var f=parseFloat(document.getElementById('face').value),b=parseFloat(document.getElementById('body').value);
+  var fw=parseInt(document.getElementById('faceWt').value)/100;
+  document.getElementById('faceDisplay').textContent=isNaN(f)?'—':f.toFixed(1);
+  document.getElementById('bodyDisplay').textContent=isNaN(b)?'—':b.toFixed(1);
+  if(isNaN(f)&&isNaN(b)){document.getElementById('physComp').textContent='—';return NaN;}
+  if(isNaN(f))f=b;if(isNaN(b))b=f;
+  var r=f*fw+b*(1-fw);document.getElementById('physComp').textContent=r.toFixed(2);return r;
+}
+function computeMent(){
+  var ids=['intellect','personality','ambition','emotional','values'];
+  var dids=['intDisplay','persDisplay','ambDisplay','emoDisplay','valDisplay'];
+  var wids=['wInt','wPers','wAmb','wEmo','wVal'];
+  var scores=[],weights=[],anyVal=false;
+  ids.forEach(function(id,i){
+    var sc=parseFloat(document.getElementById(id).value);
+    var wt=parseInt(document.getElementById(wids[i]).textContent)||20;
+    scores.push(isNaN(sc)?null:sc);weights.push(wt);
+    document.getElementById(dids[i]).textContent=isNaN(sc)?'—':sc.toFixed(1);
+    if(!isNaN(sc))anyVal=true;
+  });
+  if(!anyVal){document.getElementById('mentComp').textContent='—';return NaN;}
+  var totalW=0,weighted=0;
+  scores.forEach(function(s,i){if(s!==null){totalW+=weights[i];weighted+=s*weights[i];}});
+  var r=totalW>0?weighted/totalW:0;document.getElementById('mentComp').textContent=r.toFixed(2);return r;
+}
+
+var PL=58,PB=44,PT=20,PR=20,VW=580,VH=440,GW=VW-PL-PR,GH=VH-PT-PB;
+function toX(p){return PL+(p/10)*GW;}function toY(m){return PT+GH-(m/10)*GH;}
+function se(tag,attrs,txt){var el=document.createElementNS('http://www.w3.org/2000/svg',tag);for(var k in attrs)if(attrs.hasOwnProperty(k))el.setAttribute(k,attrs[k]);if(txt!==undefined)el.textContent=txt;return el;}
+
+function drawZoneMap(svgId,dotP,dotM,dotColor,allDots,rawDot){
+  var svg=document.getElementById(svgId);if(!svg)return;
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+  var i,z,x1,y1,x2,y2,w,h,cx,cy,v;
+  for(v=0;v<=10;v+=2){
+    svg.appendChild(se('line',{x1:toX(v),y1:PT,x2:toX(v),y2:PT+GH,stroke:'rgba(150,150,150,0.08)','stroke-width':'1'}));
+    svg.appendChild(se('line',{x1:PL,y1:toY(v),x2:PL+GW,y2:toY(v),stroke:'rgba(150,150,150,0.08)','stroke-width':'1'}));
+  }
+  for(i=0;i<zones.length;i++){
+    z=zones[i];x1=toX(z.minP);y1=toY(z.maxM);x2=toX(z.maxP);y2=toY(z.minM);w=x2-x1;h=y2-y1;cx=(x1+x2)/2;cy=(y1+y2)/2;
+    svg.appendChild(se('rect',{x:x1,y:y1,width:w,height:h,rx:'4',fill:z.color,'fill-opacity':'0.1',stroke:z.color,'stroke-opacity':'0.4','stroke-width':'1','stroke-dasharray':'5,4'}));
+    svg.appendChild(se('text',{x:cx,y:cy,'text-anchor':'middle','dominant-baseline':'middle',fill:z.color,'font-size':'8.5','font-family':'JetBrains Mono,monospace',opacity:'0.85'},z.name.toUpperCase()));
+  }
+  svg.appendChild(se('line',{x1:PL,y1:PT+GH,x2:PL+GW+6,y2:PT+GH,stroke:'var(--acc)','stroke-width':'1.5',opacity:'0.5'}));
+  svg.appendChild(se('line',{x1:PL,y1:PT+GH,x2:PL,y2:PT-6,stroke:'var(--acc)','stroke-width':'1.5',opacity:'0.5'}));
+  svg.appendChild(se('polygon',{points:(PL+GW+6)+','+(PT+GH)+' '+(PL+GW)+','+(PT+GH-3)+' '+(PL+GW)+','+(PT+GH+3),fill:'var(--acc)',opacity:'0.5'}));
+  svg.appendChild(se('polygon',{points:PL+','+(PT-6)+' '+(PL-3)+','+PT+' '+(PL+3)+','+PT,fill:'var(--acc)',opacity:'0.5'}));
+  for(v=0;v<=10;v+=2){
+    svg.appendChild(se('text',{x:toX(v),y:PT+GH+14,'text-anchor':'middle',fill:'rgba(150,150,150,0.4)','font-size':'9','font-family':'JetBrains Mono,monospace'},String(v)));
+    svg.appendChild(se('text',{x:PL-7,y:toY(v),'text-anchor':'end','dominant-baseline':'middle',fill:'rgba(150,150,150,0.4)','font-size':'9','font-family':'JetBrains Mono,monospace'},String(v)));
+  }
+  svg.appendChild(se('text',{x:PL+GW/2,y:VH-2,'text-anchor':'middle',fill:'var(--acc)','font-size':'9','font-family':'JetBrains Mono,monospace','letter-spacing':'0.1em',opacity:'0.6'},'PHYSICAL ATTRACTIVENESS'));
+  var midY=PT+GH/2;
+  svg.appendChild(se('text',{x:13,y:midY,'text-anchor':'middle',fill:'var(--acc)','font-size':'9','font-family':'JetBrains Mono,monospace','letter-spacing':'0.1em',opacity:'0.6',transform:'rotate(-90,13,'+midY+')'},'MENTAL ATTRACTIVENESS'));
+  if(allDots){allDots.forEach(function(d){svg.appendChild(se('circle',{cx:toX(d.phys),cy:toY(d.ment),r:'4',fill:d.color,opacity:'0.55',stroke:'var(--bg)','stroke-width':'1'}));});}
+  if(dotP!==undefined&&dotM!==undefined){
+    var dx=toX(dotP),dy=toY(dotM);
+    svg.appendChild(se('line',{x1:PL,y1:dy,x2:PL+GW,y2:dy,stroke:dotColor,'stroke-opacity':'0.3','stroke-width':'1','stroke-dasharray':'3,4'}));
+    svg.appendChild(se('line',{x1:dx,y1:PT,x2:dx,y2:PT+GH,stroke:dotColor,'stroke-opacity':'0.3','stroke-width':'1','stroke-dasharray':'3,4'}));
+    svg.appendChild(se('circle',{cx:dx,cy:dy,r:'16',fill:dotColor,opacity:'0.07'}));
+    svg.appendChild(se('circle',{cx:dx,cy:dy,r:'8',fill:dotColor,opacity:'0.18'}));
+    svg.appendChild(se('circle',{cx:dx,cy:dy,r:'5',fill:dotColor,stroke:'var(--bg)','stroke-width':'2'}));
+    if(rawDot&&(Math.abs(rawDot.rawP-dotP)>0.05||Math.abs(rawDot.rawM-dotM)>0.05)){
+      var rx=toX(rawDot.rawP),ry=toY(rawDot.rawM);
+      svg.appendChild(se('line',{x1:rx,y1:ry,x2:dx,y2:dy,stroke:dotColor,'stroke-opacity':'0.4','stroke-width':'1','stroke-dasharray':'3,3'}));
+      svg.appendChild(se('circle',{cx:rx,cy:ry,r:'5',fill:'none',stroke:dotColor,'stroke-width':'1.5','stroke-opacity':'0.45','stroke-dasharray':'3,2'}));
+      svg.appendChild(se('circle',{cx:rx,cy:ry,r:'2',fill:dotColor,opacity:'0.35'}));
+      svg.appendChild(se('text',{x:rx+7,y:ry-5,'text-anchor':'start',fill:dotColor,'font-size':'7','font-family':'JetBrains Mono,monospace',opacity:'0.55'},'RAW'));
+      svg.appendChild(se('text',{x:dx+7,y:dy-5,'text-anchor':'start',fill:dotColor,'font-size':'7','font-family':'JetBrains Mono,monospace',opacity:'0.85'},'EFF'));
+    }
+  }
+}
+function buildLegend(id){
+  var c=document.getElementById(id);if(!c)return;c.innerHTML='';
+  zones.forEach(function(z){
+    var item=document.createElement('div');item.className='leg-item';
+    var bar=document.createElement('div');bar.className='leg-bar';bar.style.background=z.color;
+    var span=document.createElement('span');span.textContent=z.name.toUpperCase();
+    item.appendChild(bar);item.appendChild(span);c.appendChild(item);
+  });
+}
+
+function renderZoneEditor(){
+  var c=document.getElementById('zoneEditorList');
+  c.innerHTML='';
+  zones.forEach(function(z){
+    var row=document.createElement('div');
+    row.style.marginBottom='0.8rem';row.style.paddingBottom='0.8rem';row.style.borderBottom='1px dashed var(--border)';
+    var title=document.createElement('div');
+    title.style.fontFamily='var(--f-disp)';title.style.fontWeight='600';title.style.fontStyle='italic';title.style.fontSize='0.9rem';title.style.color=z.color;title.style.marginBottom='0.5rem';
+    title.textContent=z.name;
+    row.appendChild(title);
+    var grid=document.createElement('div');
+    grid.style.display='grid';grid.style.gridTemplateColumns='1fr 1fr 1fr 1fr';grid.style.gap='6px';
+    [['minP','MIN PHYS'],['maxP','MAX PHYS'],['minM','MIN MENT'],['maxM','MAX MENT']].forEach(function(pair){
+      var fd=document.createElement('div');
+      var lbl=document.createElement('div');
+      lbl.style.fontFamily='var(--f-mono)';lbl.style.fontSize='0.52rem';lbl.style.color='var(--muted)';lbl.style.marginBottom='3px';lbl.style.letterSpacing='0.07em';
+      lbl.textContent=pair[1];
+      var inp=document.createElement('input');
+      inp.type='number';inp.min='0';inp.max='10';inp.step='0.5';inp.value=z[pair[0]];
+      inp.style.fontSize='0.8rem';inp.style.padding='5px 6px';
+      inp.addEventListener('change',function(){
+        var v=parseFloat(this.value);
+        if(!isNaN(v)&&v>=0&&v<=10){z[pair[0]]=v;saveZoneConfig();drawZoneMap('refMap',undefined,undefined,undefined,getLogDots());buildLegend('refLegend');}
+      });
+      fd.appendChild(lbl);fd.appendChild(inp);grid.appendChild(fd);
+    });
+    row.appendChild(grid);
+    c.appendChild(row);
+  });
+}
+document.getElementById('zoneEditToggle').addEventListener('click',function(){
+  var panel=document.getElementById('zoneEditorPanel');
+  var isOpen=panel.style.display==='block';
+  panel.style.display=isOpen?'none':'block';
+  this.textContent=isOpen?'✎ EDIT ZONE BOUNDARIES':'✕ CLOSE ZONE EDITOR';
+  if(!isOpen)renderZoneEditor();
+});
+document.getElementById('zoneResetBtn').addEventListener('click',function(){
+  zones.forEach(function(z){
+    var d=ZONE_DEFAULTS.find(function(x){return x.id===z.id;});
+    z.minP=d.minP;z.maxP=d.maxP;z.minM=d.minM;z.maxM=d.maxM;
+  });
+  saveZoneConfig();renderZoneEditor();
+  drawZoneMap('refMap',undefined,undefined,undefined,getLogDots());buildLegend('refLegend');
+  showToast('ZONES RESET TO DEFAULT');
+});
+function updateIntentOptions(){
+  var allowed=STATUS_INTENT_MAP[selectedStatus]||[];
+  var hint=document.getElementById('intentHint');
+  if(!selectedStatus){ hint.style.display='block'; hint.textContent='Select a status above first'; }
+  else { hint.style.display='none'; }
+  document.querySelectorAll('#intentGridWrap .intent-btn').forEach(function(btn){
+    var val=btn.getAttribute('data-intent');
+    if(allowed.indexOf(val)>=0){ btn.classList.remove('hidden-opt'); }
+    else { btn.classList.add('hidden-opt'); btn.classList.remove('selected'); if(selectedIntent===val)selectedIntent=null; }
+  });
+}
+var selectedYourGender=null;
+var selectedPartnerGender=null;
+var GENDER_LABEL={male:'Male',female:'Female',other:'Other/Non-binary'};
+
+function yourGenderKey(){return 'puzzles_your_gender::'+currentProfile;}
+function loadYourGender(){
+  var g=null;
+  try{g=localStorage.getItem(yourGenderKey());}catch(e){}
+  selectedYourGender=g;
+  document.querySelectorAll('[data-your-gender]').forEach(function(b){
+    b.classList.toggle('selected',b.getAttribute('data-your-gender')===g);
+  });
+}
+document.querySelectorAll('[data-your-gender]').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('[data-your-gender]').forEach(function(b){b.classList.remove('selected');});
+    this.classList.add('selected');
+    selectedYourGender=this.getAttribute('data-your-gender');
+    try{localStorage.setItem(yourGenderKey(),selectedYourGender);}catch(e){}
+  });
+});
+document.querySelectorAll('[data-partner-gender]').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('[data-partner-gender]').forEach(function(b){b.classList.remove('selected');});
+    this.classList.add('selected');
+    selectedPartnerGender=this.getAttribute('data-partner-gender');
+  });
+});
+
+document.querySelectorAll('.status-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.status-btn').forEach(function(b){b.classList.remove('selected');});
+    this.classList.add('selected');selectedStatus=this.getAttribute('data-status');
+    updateIntentOptions();
+    document.getElementById('endReasonField').style.display=(selectedStatus==='ex')?'block':'none';
+  });
+});
+document.querySelectorAll('#intentGridWrap .intent-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    if(this.classList.contains('hidden-opt'))return;
+    document.querySelectorAll('#intentGridWrap .intent-btn').forEach(function(b){b.classList.remove('selected');});
+    this.classList.add('selected');selectedIntent=this.getAttribute('data-intent');
+  });
+});
+
+function renderZoneBreakdownUI(breakdown){
+  var c=document.getElementById('zoneBreakdown');
+  c.innerHTML='';
+  breakdown.forEach(function(item){
+    var row=document.createElement('div');row.className='zone-bar-row';
+    var label=document.createElement('div');label.className='zone-bar-label';label.style.color=item.zone.color;label.textContent=item.zone.name;
+    var track=document.createElement('div');track.className='zone-bar-track';
+    var fill=document.createElement('div');fill.className='zone-bar-fill';fill.style.width='0%';fill.style.background=item.zone.color;
+    track.appendChild(fill);
+    var pct=document.createElement('div');pct.className='zone-bar-pct';pct.textContent=item.pct+'%';
+    row.appendChild(label);row.appendChild(track);row.appendChild(pct);
+    c.appendChild(row);
+    setTimeout(function(){fill.style.width=item.pct+'%';},30);
+  });
+}
+
+function plot(){
+  var errEl=document.getElementById('errMsg');errEl.textContent='';
+  ['face','body','intellect','personality','ambition','emotional','values'].forEach(function(id){document.getElementById(id).classList.remove('invalid');});
+  var f=parseFloat(document.getElementById('face').value),b=parseFloat(document.getElementById('body').value);
+  var intl=parseFloat(document.getElementById('intellect').value),pers=parseFloat(document.getElementById('personality').value);
+  var amb=parseFloat(document.getElementById('ambition').value),emo=parseFloat(document.getElementById('emotional').value),val=parseFloat(document.getElementById('values').value);
+  var name=document.getElementById('codename').value.trim()||'UNNAMED';
+  var errs=[];
+  function chk(id,v,l){if(isNaN(v)||v<0||v>10){errs.push(l+' 0–10');document.getElementById(id).classList.add('invalid');}}
+  chk('face',f,'FACE');chk('body',b,'BODY');chk('intellect',intl,'INTELLECT');chk('personality',pers,'PERSONALITY');chk('ambition',amb,'AMBITION');chk('emotional',emo,'EMOTIONAL');chk('values',val,'VALUES');
+  if(!selectedStatus)errs.push('SELECT STATUS');
+  if(!selectedIntent)errs.push('SELECT INTENT');
+  if(!selectedPartnerGender)errs.push('SELECT PARTNER GENDER');
+  if(errs.length){errEl.textContent=errs.join(' // ');return;}
+
+  var fw=parseInt(document.getElementById('faceWt').value)/100;
+  var phys=f*fw+b*(1-fw);
+  var mws=[parseInt(document.getElementById('wInt').textContent),parseInt(document.getElementById('wPers').textContent),parseInt(document.getElementById('wAmb').textContent),parseInt(document.getElementById('wEmo').textContent),parseInt(document.getElementById('wVal').textContent)];
+  var msc=[intl,pers,amb,emo,val];
+  var totalMW=mws.reduce(function(a,b){return a+b;},0)||100;
+  var ment=msc.reduce(function(acc,s,i){return acc+s*mws[i];},0)/totalMW;
+
+  var bias=applyStatusBias(phys,ment,selectedStatus);
+  var effP=bias.effP, effM=bias.effM;
+  var breakdown=getZoneBreakdown(effP,effM);
+  var zone=breakdown[0].zone;
+
+  var rb=document.getElementById('resultBox');
+  rb.style.display='block';rb.style.borderTopColor=zone.color;rb.classList.add('show');
+  document.getElementById('rName').textContent=zone.name;
+  document.getElementById('rName').style.color=zone.color;
+  document.getElementById('rDesc').textContent=zone.desc;
+  renderZoneBreakdownUI(breakdown);
+
+  var ic=INTENT_CONFIG[selectedIntent];
+  var adv=INTENT_ADVICE[zone.id+'+'+selectedIntent]||'No specific guidance for this combination.';
+  document.getElementById('intentResult').innerHTML='<strong>'+ic.emoji+' '+ic.label+'</strong> — '+adv;
+
+  var bn=document.getElementById('biasNotice');
+  if(bias.dP!==0||bias.dM!==0){
+    var sc2=STATUS_CONFIG[selectedStatus];
+    var dPstr=(bias.dP>0?'+':'')+bias.dP.toFixed(1), dMstr=(bias.dM>0?'+':'')+bias.dM.toFixed(1);
+    document.getElementById('biasExplain').textContent=sc2.emoji+' '+sc2.label+' — '+bias.note+' (Physical '+dPstr+', Mental '+dMstr+')';
+    bn.style.display='block';
+  } else { bn.style.display='none'; }
+
+  document.getElementById('cPhys').textContent=phys.toFixed(2);
+  document.getElementById('cMent').textContent=ment.toFixed(2);
+  document.getElementById('cEffPhys').textContent=effP.toFixed(2);
+  document.getElementById('cEffMent').textContent=effM.toFixed(2);
+  document.getElementById('cFace').textContent=f.toFixed(1);
+  document.getElementById('cBody').textContent=b.toFixed(1);
+  document.getElementById('cInt').textContent=intl.toFixed(1);
+  document.getElementById('cPers').textContent=pers.toFixed(1);
+  document.getElementById('cAmb').textContent=amb.toFixed(1);
+  document.getElementById('cEmo').textContent=emo.toFixed(1);
+  document.getElementById('cVal').textContent=val.toFixed(1);
+
+  var gb=document.getElementById('graphBox');gb.style.display='block';gb.classList.add('show');
+  drawZoneMap('graph',effP,effM,zone.color,getLogDots(),{rawP:phys,rawM:ment});
+  buildLegend('legendWrap');
+
+  var redFlag=document.getElementById('redFlag').value.trim();
+  var stressBehavior=document.getElementById('stressBehavior').value.trim();
+  var endReason=(selectedStatus==='ex')?document.getElementById('endReason').value.trim():'';
+  var entry={id:Date.now(),name:name,face:f,body:b,phys:phys,effP:effP,intellect:intl,personality:pers,ambition:amb,emotional:emo,values:val,ment:ment,effM:effM,intent:selectedIntent,status:selectedStatus,zone:zone.id,zoneName:zone.name,zoneColor:zone.color,breakdown:breakdown.map(function(x){return{id:x.zone.id,name:x.zone.name,pct:x.pct};}),redFlag:redFlag,stressBehavior:stressBehavior,endReason:endReason,partnerGender:selectedPartnerGender,yourGender:selectedYourGender,date:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),ts:Date.now()};
+  log.unshift(entry);saveLog();renderLog();showToast('LOGGED: '+name.toUpperCase());
+  document.getElementById('redFlag').value='';document.getElementById('stressBehavior').value='';document.getElementById('endReason').value='';
+  document.querySelectorAll('[data-partner-gender]').forEach(function(b){b.classList.remove('selected');});
+  selectedPartnerGender=null;
+}
+
+function getLogDots(){return log.map(function(e){return{phys:(e.effP!==undefined?e.effP:e.phys),ment:(e.effM!==undefined?e.effM:e.ment),color:e.zoneColor};});}
+
+function getFilteredSorted(){
+  var items=log.slice();
+  if(currentFilter!=='all'){
+    items=items.filter(function(e){
+      if(currentFilter.indexOf('intent-')===0)return e.intent===currentFilter.replace('intent-','');
+      if(currentFilter.indexOf('status-')===0)return e.status===currentFilter.replace('status-','');
+      return true;
+    });
+  }
+  items.sort(function(a,b){
+    if(currentSort==='newest')return b.ts-a.ts;
+    if(currentSort==='oldest')return a.ts-b.ts;
+    if(currentSort==='phys-hi')return b.phys-a.phys;
+    if(currentSort==='phys-lo')return a.phys-b.phys;
+    if(currentSort==='ment-hi')return b.ment-a.ment;
+    if(currentSort==='ment-lo')return a.ment-b.ment;
+    return 0;
+  });
+  return items;
+}
+function escapeHtml(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function buildNotesHTML(e){
+  var parts=[];
+  if(e.redFlag)parts.push('<div style="margin-top:6px;"><span class="log-score-l">RED FLAG</span><div style="font-size:0.78rem;color:var(--text2);margin-top:2px;">'+escapeHtml(e.redFlag)+'</div></div>');
+  if(e.stressBehavior)parts.push('<div style="margin-top:6px;"><span class="log-score-l">UNDER STRESS</span><div style="font-size:0.78rem;color:var(--text2);margin-top:2px;">'+escapeHtml(e.stressBehavior)+'</div></div>');
+  if(e.endReason)parts.push('<div style="margin-top:6px;"><span class="log-score-l">WHY IT ENDED</span><div style="font-size:0.78rem;color:var(--text2);margin-top:2px;">'+escapeHtml(e.endReason)+'</div></div>');
+  if(parts.length===0)return'';
+  return '<div style="margin-top:9px;padding-top:9px;border-top:1px dashed var(--border);">'+parts.join('')+'</div>';
+}
+function breakdownLine(e){
+  if(!e.breakdown||e.breakdown.length===0)return e.zoneName;
+  return e.breakdown.map(function(b){return b.name+' '+b.pct+'%';}).join(' · ');
+}
+
+function renderLog(){
+  var grid=document.getElementById('logGrid'),empty=document.getElementById('logEmpty');
+  grid.innerHTML='';
+  var items=getFilteredSorted();
+  empty.style.display=items.length===0?'block':'none';
+  items.forEach(function(e){
+    var ic=INTENT_CONFIG[e.intent]||{emoji:'?',label:'UNKNOWN',color:'#666'};
+    var sc=STATUS_CONFIG[e.status]||{emoji:'?',label:'UNKNOWN',color:'#666'};
+    var card=document.createElement('div');card.className='log-card';card.style.borderLeftColor=e.zoneColor;
+    card.innerHTML=
+      '<div class="log-card-top">'+
+        '<div>'+
+          '<div class="log-card-name" style="color:'+e.zoneColor+'">'+e.name+'</div>'+
+          '<div class="log-card-zone" style="color:'+e.zoneColor+'">'+breakdownLine(e)+'</div>'+
+          '<div class="log-card-badges">'+
+            '<span class="badge" style="color:'+sc.color+';border-color:'+sc.color+'">'+sc.emoji+' '+sc.label+'</span>'+
+            '<span class="badge" style="color:'+ic.color+';border-color:'+ic.color+'">'+ic.emoji+' '+ic.label+'</span>'+
+          '</div>'+
+        '</div>'+
+        '<div class="log-card-date">'+e.date+'</div>'+
+      '</div>'+
+      '<div class="log-card-scores">'+
+        '<div class="log-score"><span class="log-score-l">RAW PHYS</span><span class="log-score-v" style="color:var(--muted)">'+e.phys.toFixed(2)+'</span></div>'+
+        '<div class="log-score"><span class="log-score-l">EFF PHYS</span><span class="log-score-v" style="color:var(--acc)">'+((e.effP!==undefined?e.effP:e.phys).toFixed(2))+'</span></div>'+
+        '<div class="log-score"><span class="log-score-l">RAW MENT</span><span class="log-score-v" style="color:var(--muted)">'+e.ment.toFixed(2)+'</span></div>'+
+        '<div class="log-score"><span class="log-score-l">EFF MENT</span><span class="log-score-v" style="color:var(--acc)">'+((e.effM!==undefined?e.effM:e.ment).toFixed(2))+'</span></div>'+
+        '<div class="log-score"><span class="log-score-l">FACE</span><span class="log-score-v">'+e.face.toFixed(1)+'</span></div>'+
+        '<div class="log-score"><span class="log-score-l">BODY</span><span class="log-score-v">'+e.body.toFixed(1)+'</span></div>'+
+        '<div class="log-score"><span class="log-score-l">INTELLECT</span><span class="log-score-v">'+e.intellect.toFixed(1)+'</span></div>'+
+        '<div class="log-score"><span class="log-score-l">PERSONALITY</span><span class="log-score-v">'+e.personality.toFixed(1)+'</span></div>'+
+        '<div class="log-score"><span class="log-score-l">AMBITION</span><span class="log-score-v">'+e.ambition.toFixed(1)+'</span></div>'+
+        '<div class="log-score"><span class="log-score-l">EMOTIONAL</span><span class="log-score-v">'+e.emotional.toFixed(1)+'</span></div>'+
+        '<div class="log-score"><span class="log-score-l">VALUES</span><span class="log-score-v">'+e.values.toFixed(1)+'</span></div>'+
+      '</div>'+
+      buildNotesHTML(e)+
+      '<div class="log-card-actions">'+
+        '<button class="log-action-btn" data-action="edit" data-id="'+e.id+'">✏ EDIT</button>'+
+        '<button class="log-action-btn" data-action="replot" data-id="'+e.id+'">↗ MAP</button>'+
+        '<button class="log-action-btn danger" data-action="del" data-id="'+e.id+'">✕ DELETE</button>'+
+      '</div>';
+    grid.appendChild(card);
+  });
+}
+
+document.getElementById('logGrid').addEventListener('click',function(e){
+  var btn=e.target.closest('[data-action]');if(!btn)return;
+  var action=btn.getAttribute('data-action'),id=parseInt(btn.getAttribute('data-id'));
+  var entry=log.find(function(x){return x.id===id;});if(!entry)return;
+  if(action==='del'){log=log.filter(function(x){return x.id!==id;});saveLog();renderLog();showToast('ENTRY DELETED');}
+  if(action==='replot'){switchPage('map');drawZoneMap('refMap',entry.effP||entry.phys,entry.effM||entry.ment,entry.zoneColor,getLogDots(),{rawP:entry.phys,rawM:entry.ment});buildLegend('refLegend');showToast('MAPPED: '+entry.name.toUpperCase());}
+  if(action==='edit'){openEditModal(entry);}
+});
+
+document.querySelectorAll('.sort-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){document.querySelectorAll('.sort-btn').forEach(function(b){b.classList.remove('active');});this.classList.add('active');currentSort=this.getAttribute('data-sort');renderLog();});
+});
+document.querySelectorAll('.filter-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});this.classList.add('active');currentFilter=this.getAttribute('data-filter');renderLog();});
+});
+function openEditModal(entry){
+  editingId=entry.id;
+  document.getElementById('modalTitle').textContent='EDIT — '+entry.name;
+  var body=document.getElementById('modalBody');
+  var fields=[
+    {id:'e_name',label:'NAME / LABEL',type:'text',val:entry.name},
+    {id:'e_face',label:'FACE (0-10)',type:'number',val:entry.face},
+    {id:'e_body',label:'BODY (0-10)',type:'number',val:entry.body},
+    {id:'e_intellect',label:'INTELLECT (0-10)',type:'number',val:entry.intellect},
+    {id:'e_personality',label:'PERSONALITY (0-10)',type:'number',val:entry.personality},
+    {id:'e_ambition',label:'AMBITION (0-10)',type:'number',val:entry.ambition},
+    {id:'e_emotional',label:'EMOTIONAL MATURITY (0-10)',type:'number',val:entry.emotional},
+    {id:'e_values',label:'VALUES ALIGNMENT (0-10)',type:'number',val:entry.values}
+  ];
+  var html='';
+  fields.forEach(function(f){html+='<div class="field" style="margin-bottom:0.7rem;"><div class="field-label">'+f.label+'</div><input type="'+f.type+'" id="'+f.id+'" value="'+f.val+'" '+(f.type==='number'?'min="0" max="10" step="0.5"':'')+'>'+  '</div>';});
+
+  html+='<div style="font-family:var(--f-mono);font-size:0.55rem;color:var(--muted);letter-spacing:0.13em;margin:8px 0 6px;">CURRENT STATUS</div>';
+  html+='<div class="status-grid" id="editStatusGrid">';
+  Object.keys(STATUS_CONFIG).forEach(function(k){var sc=STATUS_CONFIG[k];var sel=entry.status===k?'selected':'';html+='<button class="status-btn '+sel+'" data-estatus="'+k+'"><span class="semoji">'+sc.emoji+'</span>'+sc.label+'</button>';});
+  html+='</div>';
+  html+='<div style="font-family:var(--f-mono);font-size:0.55rem;color:var(--muted);letter-spacing:0.13em;margin:10px 0 6px;">INTENT</div>';
+  html+='<div class="intent-grid" id="editIntentGrid">';
+  Object.keys(INTENT_CONFIG).forEach(function(k){var ic=INTENT_CONFIG[k];var allowed=(STATUS_INTENT_MAP[entry.status]||[]).indexOf(k)>=0;var sel=entry.intent===k?'selected':'';var hide=allowed?'':' hidden-opt';html+='<button class="intent-btn '+sel+hide+'" data-eintent="'+k+'"><span class="iemoji">'+ic.emoji+'</span>'+ic.label+'</button>';});
+  html+='</div>';
+  html+='<button class="plot-btn" id="saveEditBtn" style="margin-top:1rem;">Save Changes</button>';
+  body.innerHTML=html;
+
+  var editIntent=entry.intent,editStatus=entry.status;
+  function refreshEditIntentVisibility(){
+    var allowed=STATUS_INTENT_MAP[editStatus]||[];
+    document.querySelectorAll('#editIntentGrid .intent-btn').forEach(function(b){
+      var v=b.getAttribute('data-eintent');
+      if(allowed.indexOf(v)>=0){b.classList.remove('hidden-opt');}
+      else{b.classList.add('hidden-opt');b.classList.remove('selected');if(editIntent===v)editIntent=null;}
+    });
+  }
+  document.getElementById('editStatusGrid').addEventListener('click',function(ev){var b=ev.target.closest('[data-estatus]');if(!b)return;editStatus=b.getAttribute('data-estatus');document.querySelectorAll('[data-estatus]').forEach(function(x){x.classList.remove('selected');});b.classList.add('selected');refreshEditIntentVisibility();});
+  document.getElementById('editIntentGrid').addEventListener('click',function(ev){var b=ev.target.closest('[data-eintent]');if(!b||b.classList.contains('hidden-opt'))return;editIntent=b.getAttribute('data-eintent');document.querySelectorAll('[data-eintent]').forEach(function(x){x.classList.remove('selected');});b.classList.add('selected');});
+  document.getElementById('saveEditBtn').addEventListener('click',function(){
+    var idx=log.findIndex(function(x){return x.id===editingId;});if(idx<0)return;
+    var e=log[idx];e.name=document.getElementById('e_name').value.trim()||e.name;
+    ['face','body','intellect','personality','ambition','emotional','values'].forEach(function(f){var v=parseFloat(document.getElementById('e_'+f).value);if(!isNaN(v)&&v>=0&&v<=10)e[f]=v;});
+    e.intent=editIntent||e.intent;e.status=editStatus;
+    e.phys=e.face*0.5+e.body*0.5;
+    e.ment=(e.intellect+e.personality+e.ambition+e.emotional+e.values)/5;
+    var bias2=applyStatusBias(e.phys,e.ment,e.status);
+    e.effP=bias2.effP;e.effM=bias2.effM;
+    var bd2=getZoneBreakdown(e.effP,e.effM);
+    e.zone=bd2[0].zone.id;e.zoneName=bd2[0].zone.name;e.zoneColor=bd2[0].zone.color;
+    e.breakdown=bd2.map(function(x){return{id:x.zone.id,name:x.zone.name,pct:x.pct};});
+    saveLog();renderLog();document.getElementById('editModal').classList.remove('open');showToast('UPDATED: '+e.name.toUpperCase());
+  });
+  document.getElementById('editModal').classList.add('open');
+}
+document.getElementById('modalClose').addEventListener('click',function(){document.getElementById('editModal').classList.remove('open');});
+document.getElementById('editModal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+
+function switchPage(id){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('page-'+id).classList.add('active');
+  var tb=document.querySelector('[data-page="'+id+'"]');if(tb)tb.classList.add('active');
+  if(id==='log')renderLog();
+  if(id==='map'){drawZoneMap('refMap',undefined,undefined,undefined,getLogDots());buildLegend('refLegend');}
+}
+document.querySelectorAll('.tab-btn').forEach(function(btn){btn.addEventListener('click',function(){switchPage(this.getAttribute('data-page'));});});
+
+/* ═══ MODE (dark/light only — no theme picker) ═══ */
+var currentMode='dark';
+function applyMode(){
+  document.documentElement.setAttribute('data-mode',currentMode);
+  document.getElementById('modeToggle').innerHTML=(currentMode==='dark'?'🌙 MODE':'☀️ MODE');
+  try{localStorage.setItem('puzzles_mode',currentMode);}catch(e){}
+}
+document.getElementById('modeToggle').addEventListener('click',function(){
+  currentMode=currentMode==='dark'?'light':'dark';
+  applyMode();
+  showToast('MODE: '+currentMode.toUpperCase());
+});
+document.getElementById('profileToggle').addEventListener('click',function(e){e.stopPropagation();document.getElementById('profilePanel').classList.toggle('open');});
+document.getElementById('profilePanel').addEventListener('click',function(e){e.stopPropagation();});
+document.addEventListener('click',function(e){
+  if(e.target.closest('#profilePanel')||e.target.closest('#profileToggle'))return;
+  document.getElementById('profilePanel').classList.remove('open');
+});
+
+document.getElementById('faceWt').addEventListener('input',function(){document.getElementById('faceWtVal').textContent=this.value+'%';computePhys();});
+document.getElementById('faceWt').addEventListener('change',function(){document.getElementById('faceWtVal').textContent=this.value+'%';computePhys();});
+document.querySelectorAll('.mwt').forEach(function(sl){
+  sl.addEventListener('input',function(){document.getElementById(this.getAttribute('data-id')).textContent=this.value+'%';computeMent();});
+  sl.addEventListener('change',function(){document.getElementById(this.getAttribute('data-id')).textContent=this.value+'%';computeMent();});
+});
+['face','body'].forEach(function(id){var el=document.getElementById(id);el.addEventListener('input',computePhys);el.addEventListener('change',computePhys);});
+['intellect','personality','ambition','emotional','values'].forEach(function(id){var el=document.getElementById(id);el.addEventListener('input',computeMent);el.addEventListener('change',computeMent);});
+['face','body','intellect','personality','ambition','emotional','values'].forEach(function(id){document.getElementById(id).addEventListener('keydown',function(e){if(e.key==='Enter')plot();});});
+document.getElementById('plotBtn').addEventListener('click',plot);
+
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
+/* ═══ BIAS & PATTERN DETECTOR — the one AI feature ═══ */
+function buildLogSummaryForAI(){
+  return log.map(function(e,i){
+    var st=STATUS_CONFIG[e.status]?STATUS_CONFIG[e.status].label:e.status;
+    var it=INTENT_CONFIG[e.intent]?INTENT_CONFIG[e.intent].label:e.intent;
+    var bd=(e.breakdown||[]).map(function(b){return b.name+' '+b.pct+'%';}).join(', ');
+    var genderLabel=GENDER_LABEL[e.partnerGender]||'not specified';
+    var line=(i+1)+'. "'+e.name+'" (Gender: '+genderLabel+') — Status: '+st+', Stated Intent: '+it+
+      '\n   Zone breakdown: '+bd+
+      '\n   Raw scores: Physical '+e.phys.toFixed(1)+'/10, Mental '+e.ment.toFixed(1)+'/10'+
+      '\n   Effective (bias-adjusted) scores: Physical '+(e.effP!==undefined?e.effP:e.phys).toFixed(1)+'/10, Mental '+(e.effM!==undefined?e.effM:e.ment).toFixed(1)+'/10'+
+      '\n   Trait scores: Intellect '+e.intellect.toFixed(1)+', Personality '+e.personality.toFixed(1)+', Ambition '+e.ambition.toFixed(1)+', Emotional Maturity '+e.emotional.toFixed(1)+', Values Alignment '+e.values.toFixed(1)+
+      '\n   Logged: '+e.date;
+    if(e.redFlag)line+='\n   Red flag noted: '+e.redFlag;
+    if(e.stressBehavior)line+='\n   Behavior under stress: '+e.stressBehavior;
+    if(e.endReason)line+='\n   Why it ended: '+e.endReason;
+    return line;
+  }).join('\n\n');
+}
+function buildAnalysisPrompt(){
+  var summary=buildLogSummaryForAI();
+  var genderLine=selectedYourGender?(" I'm "+GENDER_LABEL[selectedYourGender].toLowerCase()+", if that's useful context."):"";
+  return "Hey — I've been keeping notes on people I've dated or considered dating, using a little app I built for myself. It tracks how physically and mentally drawn to someone I am, what I actually said I wanted with each person, and any notes I left about red flags or how they handled stress."+genderLine+" Could you look through what I've got so far the way a close friend would — someone who knows me, isn't afraid to be honest, but isn't clinical about it either? Just talk to me normally, like we're catching up, not like you're delivering a report.\n\n"+summary+"\n\nEach person's gender is noted above — please use the right pronoun for each of them (he/him, she/her, or they/them) rather than guessing or defaulting to one.\n\nTell me what actually stands out to you. If there's a type I keep going for, a red flag that keeps showing up, or a gap between what I say I want and who I actually end up choosing, say so plainly, using their names. If there genuinely isn't enough here yet to say anything real, tell me that honestly instead of stretching for a pattern — I'd rather hear that than a stretch. Wrap up with one thing worth me sitting with, not an order, just something a friend would leave me thinking about.";
+}
+
+/* ═══ ROTATING QUIRKY LOADING MESSAGES ═══ */
+var LOADING_MESSAGES=[
+  "Consulting our imaginary therapist...",
+  "Cross-referencing your red flags...",
+  "Doing the math your heart refuses to do...",
+  "Checking if 'we're just talking' really means that...",
+  "Reading between the red flags...",
+  "Calculating your F-Buddy-to-Marriage-Material ratio...",
+  "Weighing your values against your Wi-Fi-enabled decisions...",
+  "Politely judging your stated intent vs. your actual behavior..."
+];
+var loadingInterval=null;
+function startLoadingRotation(el){
+  var i=Math.floor(Math.random()*LOADING_MESSAGES.length);
+  el.innerHTML='<span style="color:var(--muted)">'+LOADING_MESSAGES[i]+'</span>';
+  loadingInterval=setInterval(function(){
+    i=(i+1)%LOADING_MESSAGES.length;
+    el.innerHTML='<span style="color:var(--muted)">'+LOADING_MESSAGES[i]+'</span>';
+  },1500);
+}
+function stopLoadingRotation(){
+  if(loadingInterval){clearInterval(loadingInterval);loadingInterval=null;}
+}
+
+/* ═══ COPY PROMPT + OPEN CLAUDE — works everywhere, zero setup ═══ */
+function copyToClipboard(text){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise(function(resolve,reject){
+    try{
+      var ta=document.createElement('textarea');
+      ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+      document.body.appendChild(ta);ta.focus();ta.select();
+      var ok=document.execCommand('copy');
+      document.body.removeChild(ta);
+      ok?resolve():reject(new Error('copy failed'));
+    }catch(e){reject(e);}
+  });
+}
+function utf8ToBase64(str){
+  var bytes=new TextEncoder().encode(str);
+  var binary='';
+  for(var i=0;i<bytes.length;i++){binary+=String.fromCharCode(bytes[i]);}
+  return btoa(binary);
+}
+document.getElementById('copyOpenBtn').addEventListener('click',function(){
+  if(log.length<2){
+    var resultBox=document.getElementById('aiAnalysisResult');
+    resultBox.style.display='block';
+    resultBox.innerHTML='<span style="color:var(--muted)">Need at least 2 logged entries before bias detection is meaningful.</span>';
+    return;
+  }
+  var rawPrompt=buildAnalysisPrompt();
+  var encoded=utf8ToBase64(rawPrompt);
+  var wrapped="This is a base64-encoded note from the Puzzles app — decode it and follow what's inside:\n\n"+encoded;
+  copyToClipboard(wrapped).then(function(){
+    showToast('COPIED — PASTE IT INTO CLAUDE');
+    window.open('https://claude.ai/new','_blank');
+  }).catch(function(){
+    showToast('COULD NOT COPY — TRY AGAIN');
+  });
+});
+
+/* ═══ RUN AUTOMATICALLY — shown only if own key or backend is configured ═══ */
+function updateAutoAnalysisVisibility(){
+  var claudeKey=null,backendUrl=null;
+  try{claudeKey=localStorage.getItem('puzzles_claude_api_key');}catch(e){}
+  try{backendUrl=localStorage.getItem('puzzles_backend_url');}catch(e){}
+  var wrap=document.getElementById('autoAnalysisWrap');
+  var hint=document.getElementById('autoAnalysisHint');
+  if(claudeKey||backendUrl){wrap.style.display='block';hint.style.display='none';}
+  else{wrap.style.display='none';hint.style.display='block';}
+}
+
+async function runAIAnalysis(){
+  var btn=document.getElementById('aiAnalysisBtn');
+  var resultBox=document.getElementById('aiAnalysisResult');
+  if(log.length<2){
+    resultBox.style.display='block';
+    resultBox.innerHTML='<span style="color:var(--muted)">Need at least 2 logged entries before bias detection is meaningful.</span>';
+    return;
+  }
+  btn.disabled=true;btn.textContent='ANALYSING...';
+  resultBox.style.display='block';
+  startLoadingRotation(resultBox);
+
+  var prompt=buildAnalysisPrompt();
+
+  try{
+    var claudeKey=null;
+    try{claudeKey=localStorage.getItem('puzzles_claude_api_key');}catch(e){}
+    var backendUrl=null;
+    try{backendUrl=localStorage.getItem('puzzles_backend_url');}catch(e){}
+    var response,text;
+
+    if(claudeKey){
+      response=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "x-api-key":claudeKey,
+          "anthropic-version":"2023-06-01",
+          "anthropic-dangerous-direct-browser-access":"true"
+        },
+        body:JSON.stringify({
+          model:"claude-sonnet-4-6",
+          max_tokens:1000,
+          messages:[{role:"user",content:prompt}]
+        })
+      });
+      if(!response.ok){var errBody=await response.text();throw new Error('Your API key was rejected — double check it under MORE. ('+response.status+')');}
+      var data=await response.json();
+      text=(data.content||[]).map(function(b){return b.type==='text'?b.text:'';}).join('\n').trim();
+    }else if(backendUrl){
+      response=await fetch(backendUrl,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({prompt:prompt})
+      });
+      var backendData=await response.json();
+      if(!response.ok){throw new Error(backendData.error||'Backend request failed');}
+      text=(backendData.text||'').trim();
+    }else{
+      response=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-6",
+          max_tokens:1000,
+          messages:[{role:"user",content:prompt}]
+        })
+      });
+      var data2=await response.json();
+      text=(data2.content||[]).map(function(b){return b.type==='text'?b.text:'';}).join('\n').trim();
+    }
+
+    stopLoadingRotation();
+    if(!text)text='No analysis returned — try again.';
+    resultBox.innerHTML='<div style="white-space:pre-wrap;">'+escapeHtml(text)+'</div>';
+  }catch(err){
+    stopLoadingRotation();
+    resultBox.innerHTML='<span style="color:var(--red)">'+escapeHtml(err.message||'Analysis unavailable right now.')+' Otherwise, check your setup under the MORE tab.</span>';
+  }
+  btn.disabled=false;btn.textContent='⚡ RUN AUTOMATICALLY';
+}
+document.getElementById('aiAnalysisBtn').addEventListener('click',runAIAnalysis);
+
+document.getElementById('saveBackendUrlBtn').addEventListener('click',function(){
+  var url=document.getElementById('backendUrlInput').value.trim();
+  try{
+    if(url){localStorage.setItem('puzzles_backend_url',url);showToast('BACKEND URL SAVED');}
+    else{localStorage.removeItem('puzzles_backend_url');showToast('BACKEND URL CLEARED');}
+  }catch(e){}
+  updateAutoAnalysisVisibility();
+});
+try{
+  var savedBackendUrl=localStorage.getItem('puzzles_backend_url');
+  if(savedBackendUrl)document.getElementById('backendUrlInput').value=savedBackendUrl;
+}catch(e){}
+
+function updateClaudeKeyStatus(){
+  var status=document.getElementById('claudeKeyStatus');
+  var key=null;
+  try{key=localStorage.getItem('puzzles_claude_api_key');}catch(e){}
+  if(key){
+    status.textContent='✓ KEY SAVED — ENDS IN ...'+key.slice(-4);
+    status.style.color='var(--green)';
+  }else{
+    status.textContent='NO KEY SAVED — USE "COPY PROMPT & OPEN CLAUDE" ON THE LOG PAGE INSTEAD';
+    status.style.color='var(--muted)';
+  }
+}
+document.getElementById('saveClaudeKeyBtn').addEventListener('click',function(){
+  var key=document.getElementById('claudeKeyInput').value.trim();
+  try{
+    if(key){localStorage.setItem('puzzles_claude_api_key',key);showToast('API KEY SAVED');}
+    else{localStorage.removeItem('puzzles_claude_api_key');showToast('API KEY CLEARED');}
+  }catch(e){}
+  document.getElementById('claudeKeyInput').value='';
+  updateClaudeKeyStatus();
+  updateAutoAnalysisVisibility();
+});
+updateClaudeKeyStatus();
+updateAutoAnalysisVisibility();
+
+/* ═══ GUIDED TOUR — arrows pointing at real fields, first visit only ═══ */
+var TOUR_STEPS=[
+  {target:'profileNameDisplay',text:'That\'s you. Tap here anytime to rename yourself or add another person\'s profile.'},
+  {target:'codename',text:'Type the name of the person you\'re rating — not yourself.'},
+  {target:'tourPhysicalPanel',text:'Rate how physically drawn to them you are.'},
+  {target:'tourMentalPanel',text:'Rate how mentally / personality-wise drawn to them you are.'},
+  {target:'tourStatusPanel',text:'Where do you actually stand with them right now — just met, dating, ex, etc.?'},
+  {target:'tourIntentPanel',text:'What do you actually want going forward with them?'},
+  {target:'plotBtn',text:'Hit this to save them to your list. That\'s it — you\'re done with this person.'}
+];
+var tourStep=0;
+var tourActive=false;
+var tourRAF=null;
+
+function positionTour(){
+  if(!tourActive)return;
+  var el=document.getElementById(TOUR_STEPS[tourStep].target);
+  if(!el)return;
+  var rect=el.getBoundingClientRect();
+  var tip=document.getElementById('tourTooltip');
+  var arrow=document.getElementById('tourArrow');
+  var tipW=Math.min(280,window.innerWidth-32);
+  tip.style.width=tipW+'px';
+  var tipH=tip.offsetHeight||140;
+
+  // Anchor on the TOP edge of the target — reliable even for panels taller than the viewport
+  var spaceAbove=rect.top;
+  var spaceBelow=window.innerHeight-rect.top;
+  var placeBelow=spaceBelow>=tipH+24||spaceBelow>=spaceAbove;
+
+  var top;
+  if(placeBelow){
+    top=rect.top+24;
+    arrow.className='tour-arrow top';
+  }else{
+    top=rect.top-tipH-16;
+    arrow.className='tour-arrow bottom';
+  }
+  // Hard clamp — tooltip must always stay fully on screen no matter what
+  top=Math.max(8,Math.min(top,window.innerHeight-tipH-8));
+
+  var left=Math.max(16,Math.min(rect.left,window.innerWidth-tipW-16));
+  tip.style.top=top+'px';
+  tip.style.left=left+'px';
+  arrow.style.left=Math.max(14,Math.min(rect.left+rect.width/2-left-7,tipW-28))+'px';
+
+  tourRAF=requestAnimationFrame(positionTour);
+}
+function clearTourHighlight(){
+  document.querySelectorAll('.tour-highlight').forEach(function(el){el.classList.remove('tour-highlight');});
+}
+function showTourStep(){
+  clearTourHighlight();
+  var el=document.getElementById(TOUR_STEPS[tourStep].target);
+  if(el)el.classList.add('tour-highlight');
+  document.getElementById('tourText').textContent=TOUR_STEPS[tourStep].text;
+  document.getElementById('tourStepCount').textContent=(tourStep+1)+' / '+TOUR_STEPS.length;
+  document.getElementById('tourNextBtn').textContent=(tourStep===TOUR_STEPS.length-1)?'GOT IT ✓':'NEXT →';
+  document.getElementById('tourTooltip').classList.add('active');
+  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+  if(tourRAF)cancelAnimationFrame(tourRAF);
+  positionTour();
+}
+function startTour(){
+  switchPage('plot');
+  tourStep=0;
+  tourActive=true;
+  document.getElementById('tourDim').classList.add('active');
+  showTourStep();
+}
+function endTour(){
+  tourActive=false;
+  if(tourRAF){cancelAnimationFrame(tourRAF);tourRAF=null;}
+  clearTourHighlight();
+  document.getElementById('tourDim').classList.remove('active');
+  document.getElementById('tourTooltip').classList.remove('active');
+  try{localStorage.setItem('puzzles_seen_tour','1');}catch(e){}
+}
+document.getElementById('tourNextBtn').addEventListener('click',function(){
+  if(tourStep>=TOUR_STEPS.length-1){endTour();return;}
+  tourStep++;showTourStep();
+});
+document.getElementById('tourSkipBtn').addEventListener('click',endTour);
+document.getElementById('tourDim').addEventListener('click',endTour);
+
+function openGuideModal(){document.getElementById('guideModal').classList.add('open');}
+function closeGuideModal(){document.getElementById('guideModal').classList.remove('open');}
+document.getElementById('howItWorksBtn').addEventListener('click',openGuideModal);
+document.getElementById('guideModalClose').addEventListener('click',closeGuideModal);
+document.getElementById('guideGotItBtn').addEventListener('click',function(){
+  closeGuideModal();
+  try{localStorage.setItem('puzzles_seen_guide','1');}catch(e){}
+});
+document.getElementById('guideModal').addEventListener('click',function(e){if(e.target===this)closeGuideModal();});
+document.getElementById('relaunchTourBtn').addEventListener('click',function(){
+  closeGuideModal();
+  startTour();
+});
+
+/* ═══ INIT ═══ */
+try{var savedMode=localStorage.getItem('puzzles_mode');if(savedMode)currentMode=savedMode;}catch(e){}
+applyMode();
+initProfiles();
+updateIntentOptions();
+renderLog();
+try{
+  if(!localStorage.getItem('puzzles_seen_tour')){
+    setTimeout(startTour,400);
+  }
+}catch(e){}
+</script>
+</body>
+</html>
